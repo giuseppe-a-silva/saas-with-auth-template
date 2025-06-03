@@ -22,7 +22,11 @@ export class EmailDispatcher implements NotificationDispatcher {
   private transporter: nodemailer.Transporter | null = null;
 
   constructor(private readonly configService: ConfigService) {
-    void this.initializeTransporter();
+    // Inicializa o transporter apenas se as configurações estiverem disponíveis
+    this.initializeTransporter().catch((_error) => {
+      // Log do erro já é feito dentro do método
+      // Não precisa fazer nada aqui, apenas evita que o erro não tratado apareça
+    });
   }
 
   /**
@@ -30,19 +34,37 @@ export class EmailDispatcher implements NotificationDispatcher {
    */
   private async initializeTransporter(): Promise<void> {
     try {
+      const smtpHost = this.configService.get<string>('SMTP_HOST');
+      const smtpUser = this.configService.get<string>('SMTP_USER');
+      const smtpPass = this.configService.get<string>('SMTP_PASS');
+
+      // Só tenta inicializar se as configurações essenciais estiverem presentes
+      if (!smtpHost || !smtpUser || !smtpPass) {
+        this.logger.warn(
+          'Email dispatcher não configurado - variáveis SMTP ausentes',
+          {
+            hasHost: !!smtpHost,
+            hasUser: !!smtpUser,
+            hasPass: !!smtpPass,
+          },
+        );
+        this.transporter = null;
+        return;
+      }
+
       const smtpConfig = {
-        host: this.configService.get<string>('SMTP_HOST'),
+        host: smtpHost,
         port: this.configService.get<number>('SMTP_PORT', 587),
         secure: this.configService.get<boolean>('SMTP_SECURE', false),
         auth: {
-          user: this.configService.get<string>('SMTP_USER'),
-          pass: this.configService.get<string>('SMTP_PASS'),
+          user: smtpUser,
+          pass: smtpPass,
         },
       };
 
       this.transporter = nodemailer.createTransport(smtpConfig);
 
-      // Verifica conexão
+      // Verifica conexão apenas se o transporter foi criado
       if (this.transporter) {
         await this.transporter.verify();
         this.logger.log('Email dispatcher inicializado com sucesso');
@@ -50,7 +72,7 @@ export class EmailDispatcher implements NotificationDispatcher {
     } catch (error) {
       const errorMessage =
         error instanceof Error ? error.message : 'Erro desconhecido';
-      this.logger.error('Erro ao inicializar email dispatcher', {
+      this.logger.warn('Email dispatcher não pôde ser inicializado', {
         error: errorMessage,
       });
       this.transporter = null;

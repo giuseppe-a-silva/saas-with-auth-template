@@ -10,6 +10,7 @@ import { AuthResolver } from './auth/resolvers/auth.resolver';
 import { CaslModule } from './casl/casl.module';
 import { ConfigModule } from './config/config.module';
 import { DatabaseModule } from './database/prisma.module';
+import { NotificationsModule } from './notifications/notifications.module';
 import { PermissionsModule } from './permissions/permissions.module';
 import { UsersResolver } from './users/resolvers/users.resolver';
 import { UsersModule } from './users/users.module';
@@ -22,6 +23,7 @@ import { UsersModule } from './users/users.module';
     UsersModule,
     CaslModule,
     PermissionsModule,
+    NotificationsModule,
     GraphQLModule.forRoot<ApolloDriverConfig>({
       driver: ApolloDriver,
       autoSchemaFile: join(process.cwd(), 'src/schema.gql'), // Gera o schema automaticamente

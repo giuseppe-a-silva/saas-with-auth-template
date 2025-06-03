@@ -1,0 +1,251 @@
+# ------------------------------------------------------
+# THIS FILE WAS AUTOMATICALLY GENERATED (DO NOT MODIFY)
+# ------------------------------------------------------
+
+"""Resposta da autenticação, contendo o token de acesso"""
+type AuthPayload {
+  """Token de acesso JWT"""
+  accessToken: String!
+}
+
+type ChannelHealthStatus {
+  channel: String!
+  isConfigured: Boolean!
+  isHealthy: Boolean!
+  provider: String!
+  timeout: Float
+}
+
+"""Dados para criação de template de notificação"""
+input CreateTemplateDto {
+  """Categoria da notificação"""
+  category: NotificationCategory!
+
+  """Canal de envio da notificação"""
+  channel: NotificationChannel!
+
+  """Conteúdo do template com sintaxe LiquidJS"""
+  content: String!
+
+  """Se o template está ativo"""
+  isActive: Boolean = true
+
+  """Nome único do template"""
+  name: String!
+
+  """Título da notificação"""
+  title: String!
+}
+
+"""
+A date-time string at UTC, such as 2019-12-03T09:54:33Z, compliant with the date-time format.
+"""
+scalar DateTime
+
+input LoginDto {
+  """Identificador do usuário (email ou nome de usuário)"""
+  identifier: String!
+
+  """Senha do usuário"""
+  password: String!
+}
+
+type Mutation {
+  """Cria um novo template de notificação"""
+  createNotificationTemplate(input: CreateTemplateDto!): NotificationTemplate!
+
+  """Deleta um usuário do sistema (requer permissão)."""
+  deleteUser(id: ID!): User!
+
+  """Autentica usuário e retorna tokens de acesso"""
+  login(loginInput: LoginDto!): AuthPayload!
+
+  """Realiza o logout do usuário limpando o cookie de refresh token."""
+  logout: SimpleStatusPayload!
+
+  """Gera um novo token de acesso usando o refresh token (via cookie)."""
+  refreshToken: AuthPayload!
+
+  """Registra novo usuário no sistema"""
+  register(registerInput: RegisterDto!): User!
+  sendNotification(input: SendNotificationDto!): NotificationResult!
+
+  """Atualiza o perfil do usuário autenticado."""
+  updateMyProfile(updateUserInput: UpdateUserInput!): User!
+}
+
+"""Categorias de notificação disponíveis no sistema"""
+enum NotificationCategory {
+  ADMIN
+  AUTH
+  LEADS
+  MARKETING
+  SISTEMA
+}
+
+"""Canais de envio de notificação disponíveis"""
+enum NotificationChannel {
+  EMAIL
+  PUSH
+  REALTIME
+  THIRD_PARTY
+}
+
+type NotificationResult {
+  error: String
+  externalId: String
+  metadata: String
+  sentAt: DateTime
+  status: String!
+}
+
+"""Template de notificação do sistema"""
+type NotificationTemplate {
+  """Categoria da notificação"""
+  category: NotificationCategory!
+
+  """Canal de envio da notificação"""
+  channel: NotificationChannel!
+
+  """Conteúdo do template com sintaxe LiquidJS"""
+  content: String!
+
+  """Data e hora de criação do template"""
+  createdAt: DateTime!
+
+  """ID do usuário que criou o template"""
+  createdBy: ID
+
+  """ID único do template"""
+  id: ID!
+
+  """Se o template está ativo"""
+  isActive: Boolean!
+
+  """Nome único do template"""
+  name: String!
+
+  """Título da notificação"""
+  title: String!
+
+  """Data e hora da última atualização"""
+  updatedAt: DateTime!
+}
+
+type Query {
+  """Extrai variáveis de um template"""
+  extractTemplateVariables(content: String!): [String!]!
+
+  """Busca um usuário pelo seu ID."""
+  findUserById(id: ID!): User
+  getChannelsHealthStatus: [ChannelHealthStatus!]!
+  getRetryStatistics: RetryStatistics!
+
+  """Retorna os dados do usuário autenticado atualmente."""
+  me: User!
+
+  """Busca template por nome"""
+  notificationTemplateByName(name: String!): NotificationTemplate!
+
+  """Lista templates de notificação com filtros opcionais"""
+  notificationTemplates(category: String, channel: String, isActive: Boolean, search: String): [NotificationTemplate!]!
+
+  """Gera preview de template com dados de exemplo"""
+  previewNotificationTemplate(sampleData: String, templateName: String!): String!
+
+  """Valida sintaxe LiquidJS de um template"""
+  validateTemplateContent(content: String!): Boolean!
+}
+
+"""Dados do destinatário da notificação"""
+input RecipientDto {
+  """Email do destinatário"""
+  email: String!
+
+  """ID externo do destinatário"""
+  externalId: String
+
+  """ID único do destinatário"""
+  id: String!
+
+  """Nome do destinatário"""
+  name: String!
+}
+
+input RegisterDto {
+  """Endereço de email único do usuário"""
+  email: String!
+
+  """Senha para acesso à conta"""
+  password: String!
+
+  """Nome de usuário único no sistema"""
+  username: String!
+}
+
+type RetryStatistics {
+  failed: Float!
+  pending: Float!
+  retrying: Float!
+  success: Float!
+  total: Float!
+}
+
+"""Papéis de usuário definidos no sistema"""
+enum Role {
+  ADMIN
+  EDITOR
+  USER
+}
+
+"""Dados para envio de notificação"""
+input SendNotificationDto {
+  """Dados dinâmicos em formato JSON para interpolação"""
+  data: String!
+
+  """Metadados opcionais em formato JSON"""
+  meta: String
+
+  """Dados do destinatário"""
+  recipient: RecipientDto!
+
+  """Nome do template a ser utilizado"""
+  templateName: String!
+}
+
+"""Resposta simples para operações como logout"""
+type SimpleStatusPayload {
+  """Mensagem opcional de status"""
+  message: String
+
+  """Indica se a operação foi bem-sucedida"""
+  success: Boolean!
+}
+
+"""Dados para atualizar um usuário existente"""
+input UpdateUserInput {
+  email: String
+  password: String
+  username: String
+}
+
+"""Representa um usuário no sistema"""
+type User {
+  """Data e hora de criação do usuário"""
+  createdAt: DateTime!
+
+  """Endereço de e-mail único do usuário"""
+  email: String!
+
+  """ID único do usuário"""
+  id: ID!
+
+  """Papel (role) do usuário no sistema"""
+  role: Role!
+
+  """Data e hora da última atualização do usuário"""
+  updatedAt: DateTime!
+
+  """Nome de usuário único"""
+  username: String!
+}

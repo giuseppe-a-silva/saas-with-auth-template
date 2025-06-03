@@ -1,3 +1,4 @@
+import { Field, InputType } from '@nestjs/graphql';
 import { Transform } from 'class-transformer';
 import { IsNotEmpty, IsString, MaxLength, MinLength } from 'class-validator';
 
@@ -5,11 +6,13 @@ import { IsNotEmpty, IsString, MaxLength, MinLength } from 'class-validator';
  * DTO para validação dos dados de login
  * Utilizado na autenticação de usuários existentes
  */
+@InputType()
 export class LoginDto {
   /**
    * Identificador do usuário (email ou nome de usuário)
    * Aceita tanto email quanto username para flexibilidade de login
    */
+  @Field({ description: 'Identificador do usuário (email ou nome de usuário)' })
   @IsNotEmpty({ message: 'O nome de usuário ou email não pode estar vazio.' })
   @IsString({ message: 'O identificador deve ser uma string.' })
   @MaxLength(255, {
@@ -24,6 +27,7 @@ export class LoginDto {
    * Senha do usuário em texto plano
    * Será validada contra o hash armazenado no banco
    */
+  @Field({ description: 'Senha do usuário' })
   @IsNotEmpty({ message: 'A senha não pode estar vazia.' })
   @IsString({ message: 'A senha deve ser uma string.' })
   @MinLength(1, { message: 'A senha não pode estar vazia.' })

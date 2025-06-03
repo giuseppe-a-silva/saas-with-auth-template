@@ -1,3 +1,4 @@
+import { registerEnumType } from '@nestjs/graphql';
 import { NotificationPayload } from '../interfaces/notification-dispatcher.interface';
 
 /**
@@ -11,6 +12,12 @@ export enum NotificationCategory {
   MARKETING = 'MARKETING',
   ADMIN = 'ADMIN',
 }
+
+// Registra o enum para o GraphQL
+registerEnumType(NotificationCategory, {
+  name: 'NotificationCategory',
+  description: 'Categorias de notificação disponíveis no sistema',
+});
 
 /**
  * Dados para criação de um template de notificação

@@ -1,3 +1,5 @@
+import { registerEnumType } from '@nestjs/graphql';
+
 /**
  * Payload padrão para envio de notificações
  * Utilizado por todos os canais de envio
@@ -60,6 +62,17 @@ export enum NotificationStatus {
   FAILED = 'FAILED',
   RETRYING = 'RETRYING',
 }
+
+// Registra os enums para o GraphQL
+registerEnumType(NotificationChannel, {
+  name: 'NotificationChannel',
+  description: 'Canais de envio de notificação disponíveis',
+});
+
+registerEnumType(NotificationStatus, {
+  name: 'NotificationStatus',
+  description: 'Status de envio de notificação',
+});
 
 /**
  * Resultado do envio de uma notificação
