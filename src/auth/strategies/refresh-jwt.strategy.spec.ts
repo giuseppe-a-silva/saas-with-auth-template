@@ -1,7 +1,7 @@
 import { UnauthorizedException } from '@nestjs/common';
 import { ConfigService } from '@nestjs/config';
 import { Test, TestingModule } from '@nestjs/testing';
-import { User } from '@prisma/client';
+import { Role, User } from '@prisma/client';
 import { Request } from 'express';
 import { UsersService } from '../../users/users.service';
 import { JwtPayload } from './jwt.strategy';
@@ -65,23 +65,35 @@ describe('RefreshJwtStrategy', () => {
       role: 'USER',
     };
 
+    const baseDate = new Date('2025-01-01T10:00:00.000Z');
+
     const mockUser: User = {
-      id: 'user-123',
+      id: 'user-real-id', // ID real do usuário no banco
       email: 'test@example.com',
       username: 'testuser',
-      password: 'hashedpassword',
-      role: 'USER',
-      createdAt: new Date(),
-      updatedAt: new Date(),
+      password: 'hashedPassword',
+      role: Role.USER,
+      createdAt: baseDate,
+      updatedAt: baseDate,
+      emailVerified: true,
+      emailVerificationToken: null,
+      emailVerificationTokenExpires: null,
+      passwordResetToken: null,
+      passwordResetTokenExpires: null,
     };
 
-    const mockUserWithRefreshToken = {
-      id: 'user-123',
+    const expectedUserWithRefreshToken = {
+      id: 'user-real-id',
       email: 'test@example.com',
       username: 'testuser',
-      role: 'USER',
-      createdAt: mockUser.createdAt,
-      updatedAt: mockUser.updatedAt,
+      role: Role.USER,
+      createdAt: baseDate,
+      updatedAt: baseDate,
+      emailVerified: true,
+      emailVerificationToken: null,
+      emailVerificationTokenExpires: null,
+      passwordResetToken: null,
+      passwordResetTokenExpires: null,
       refreshToken: 'valid-refresh-token',
     };
 
@@ -96,7 +108,7 @@ describe('RefreshJwtStrategy', () => {
 
       const result = await strategy.validate(mockRequest, mockPayload);
 
-      expect(result).toEqual(mockUserWithRefreshToken);
+      expect(result).toEqual(expectedUserWithRefreshToken);
       expect(mockUsersService.findOneById).toHaveBeenCalledWith('user-123');
     });
 
@@ -141,17 +153,31 @@ describe('RefreshJwtStrategy', () => {
         ...mockPayload,
         role: 'ADMIN',
       };
-      const adminUser = { ...mockUser, role: 'ADMIN' };
-      const adminUserWithRefreshToken = {
-        ...mockUserWithRefreshToken,
+      const adminUser = {
+        ...mockUser,
+        id: 'admin-real-id',
         role: 'ADMIN',
+      };
+      const expectedAdminUserWithRefreshToken = {
+        id: 'admin-real-id',
+        email: 'test@example.com',
+        username: 'testuser',
+        role: Role.ADMIN,
+        createdAt: baseDate,
+        updatedAt: baseDate,
+        emailVerified: true,
+        emailVerificationToken: null,
+        emailVerificationTokenExpires: null,
+        passwordResetToken: null,
+        passwordResetTokenExpires: null,
+        refreshToken: 'valid-refresh-token',
       };
 
       mockUsersService.findOneById.mockResolvedValue(adminUser);
 
       const result = await strategy.validate(mockRequest, adminPayload);
 
-      expect(result).toEqual(adminUserWithRefreshToken);
+      expect(result).toEqual(expectedAdminUserWithRefreshToken);
       expect(mockUsersService.findOneById).toHaveBeenCalledWith('user-123');
     });
   });

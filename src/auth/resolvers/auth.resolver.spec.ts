@@ -1,11 +1,14 @@
 import { ConflictException, UnauthorizedException } from '@nestjs/common';
 import { Test, TestingModule } from '@nestjs/testing';
+import { User as PrismaUser, Role } from '@prisma/client';
 import { Response } from 'express';
 import { User } from '../../users/entities/user.entity';
 import { AuthService } from '../auth.service';
 import { LoginDto } from '../dto/login.dto';
 import { RegisterDto } from '../dto/register.dto';
 import { AuthPayload } from '../entities/auth-payload.entity';
+import { EmailVerificationService } from '../services/email-verification.service';
+import { PasswordResetService } from '../services/password-reset.service';
 import { AuthResolver } from './auth.resolver';
 
 // Mock do AuthService
@@ -14,6 +17,22 @@ const mockAuthService = {
   register: jest.fn(),
   refreshToken: jest.fn(),
   logout: jest.fn(),
+  changePassword: jest.fn(),
+};
+
+// Mock do EmailVerificationService
+const mockEmailVerificationService = {
+  sendVerificationEmail: jest.fn(),
+  verifyEmailToken: jest.fn(),
+  isTokenValid: jest.fn(),
+  resendVerificationEmail: jest.fn(),
+};
+
+// Mock do PasswordResetService
+const mockPasswordResetService = {
+  forgotPassword: jest.fn(),
+  resetPassword: jest.fn(),
+  isTokenValid: jest.fn(),
 };
 
 // Mock do Response do Express
@@ -33,6 +52,14 @@ describe('AuthResolver', () => {
         {
           provide: AuthService,
           useValue: mockAuthService,
+        },
+        {
+          provide: EmailVerificationService,
+          useValue: mockEmailVerificationService,
+        },
+        {
+          provide: PasswordResetService,
+          useValue: mockPasswordResetService,
         },
       ],
     }).compile();
@@ -87,12 +114,13 @@ describe('AuthResolver', () => {
     };
 
     const expectedUser: Omit<User, 'password'> = {
-      id: 'user-123',
+      id: 'user-id',
       email: 'novo@example.com',
       username: 'novousuario',
-      role: 'USER',
+      role: Role.USER,
       createdAt: new Date(),
       updatedAt: new Date(),
+      emailVerified: true,
     };
 
     it('deve registrar novo usuário com dados válidos', async () => {
@@ -117,13 +145,18 @@ describe('AuthResolver', () => {
   });
 
   describe('refreshToken', () => {
-    const mockUser: Omit<User, 'password'> = {
-      id: 'user-123',
+    const mockUser: Omit<PrismaUser, 'password'> = {
+      id: 'user-id',
       email: 'test@example.com',
       username: 'testuser',
-      role: 'USER',
+      role: Role.USER,
       createdAt: new Date(),
       updatedAt: new Date(),
+      emailVerified: true,
+      emailVerificationToken: null,
+      emailVerificationTokenExpires: null,
+      passwordResetToken: null,
+      passwordResetTokenExpires: null,
     };
 
     const context = { req: { user: mockUser } };

@@ -19,11 +19,26 @@ model User {
   username  String   @unique
   password  String
   role      Role     @default(USER)
+  
+  // Campos para verificação de email
+  emailVerified                 Boolean   @default(false)
+  emailVerificationToken        String?   @unique
+  emailVerificationTokenExpires DateTime?
+  
+  // Campos para recuperação de senha
+  passwordResetToken            String?   @unique
+  passwordResetTokenExpires     DateTime?
+  
   createdAt DateTime @default(now())
   updatedAt DateTime @updatedAt
   permissions Permission[]
   auditLogs AuditLog[]
   notificationTemplates NotificationTemplate[] // templates criados pelo usuário
+  
+  // Índices para performance dos novos campos
+  @@index([emailVerificationToken])
+  @@index([passwordResetToken])
+  @@index([emailVerified])
 }
 
 enum Role {
@@ -74,15 +89,30 @@ model AuditLog {
 }
 
 enum AuditActionType {
+  // Autenticação e Autorização
   LOGIN
   LOGOUT
   LOGIN_FAILED
+  USER_LOGIN
+  USER_LOGOUT
+  USER_REGISTER
+
+  // Gerenciamento de Senha
   PASSWORD_CHANGE
+  PASSWORD_RESET_REQUEST
+  PASSWORD_RESET_CONFIRM
+
+  // Verificação de Email
+  EMAIL_VERIFICATION
+
+  // Dados e Permissões
   DATA_UPDATE
   ACCESS_DENIED
   PERMISSION_CHECK
   TOKEN_REFRESH
   ACCOUNT_LOCKED
+
+  // Notificações
   NOTIFICATION_SENT
   NOTIFICATION_FAILED
   TEMPLATE_CREATED

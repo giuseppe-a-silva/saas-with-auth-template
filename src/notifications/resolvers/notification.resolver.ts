@@ -1,77 +1,12 @@
 import { Logger } from '@nestjs/common';
-import {
-  Args,
-  Field,
-  Mutation,
-  ObjectType,
-  Query,
-  Resolver,
-} from '@nestjs/graphql';
+import { Args, Mutation, Query, Resolver } from '@nestjs/graphql';
+import { AuditActionType } from '@prisma/client';
+import { Audit } from '../../common/interceptors/audit.interceptor';
 import { SendNotificationDto } from '../dto/send-notification.dto';
+import { ChannelHealthStatus } from '../entities/channel-health-status.entity';
+import { NotificationResult } from '../entities/notification-result.entity';
+import { RetryStatistics } from '../entities/retry-statistics.entity';
 import { NotificationService } from '../services/notification.service';
-
-/**
- * Tipo de retorno para resultado de notificação
- */
-@ObjectType()
-export class NotificationResult {
-  @Field(() => String)
-  status: string;
-
-  @Field(() => String, { nullable: true })
-  externalId?: string;
-
-  @Field(() => String, { nullable: true })
-  error?: string;
-
-  @Field(() => String, { nullable: true })
-  metadata?: string;
-
-  @Field(() => Date, { nullable: true })
-  sentAt?: Date;
-}
-
-/**
- * Tipo de retorno para estatísticas de retry
- */
-@ObjectType()
-export class RetryStatistics {
-  @Field(() => Number)
-  pending: number;
-
-  @Field(() => Number)
-  retrying: number;
-
-  @Field(() => Number)
-  success: number;
-
-  @Field(() => Number)
-  failed: number;
-
-  @Field(() => Number)
-  total: number;
-}
-
-/**
- * Tipo de retorno para status de saúde dos canais
- */
-@ObjectType()
-export class ChannelHealthStatus {
-  @Field(() => String)
-  channel: string;
-
-  @Field(() => String)
-  provider: string;
-
-  @Field(() => Boolean)
-  isHealthy: boolean;
-
-  @Field(() => Boolean)
-  isConfigured: boolean;
-
-  @Field(() => Number, { nullable: true })
-  timeout?: number;
-}
 
 /**
  * Resolver GraphQL para operações de notificação
@@ -88,7 +23,13 @@ export class NotificationResolver {
    * @param input Dados da notificação
    * @returns Resultado do envio
    */
-  @Mutation(() => NotificationResult)
+  @Audit(AuditActionType.NOTIFICATION_SENT, {
+    includeRequestBody: true,
+    sensitiveFields: ['data', 'meta'],
+  })
+  @Mutation(() => NotificationResult, {
+    description: 'Envia uma notificação usando um template específico',
+  })
   async sendNotification(
     @Args('input') input: SendNotificationDto,
   ): Promise<NotificationResult> {
@@ -146,7 +87,9 @@ export class NotificationResolver {
    * Obtém estatísticas do sistema de retry
    * @returns Estatísticas de retry
    */
-  @Query(() => RetryStatistics)
+  @Query(() => RetryStatistics, {
+    description: 'Obtém estatísticas do sistema de retry de notificações',
+  })
   getRetryStatistics(): RetryStatistics {
     const stats = this.notificationService.getRetryStatistics();
     return {
@@ -162,7 +105,10 @@ export class NotificationResolver {
    * Verifica status de saúde dos canais de notificação
    * @returns Status de cada canal
    */
-  @Query(() => [ChannelHealthStatus])
+  @Query(() => [ChannelHealthStatus], {
+    description:
+      'Verifica o status de saúde dos canais de notificação configurados',
+  })
   async getChannelsHealthStatus(): Promise<ChannelHealthStatus[]> {
     const channelsStatus =
       await this.notificationService.getChannelsHealthStatus();

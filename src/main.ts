@@ -1,8 +1,11 @@
 import { Logger, ValidationPipe } from '@nestjs/common';
-import { NestFactory } from '@nestjs/core';
+import { NestFactory, Reflector } from '@nestjs/core';
 import * as cookieParser from 'cookie-parser';
 import { AppModule } from './app.module';
+import { FeatureFlagsConfig } from './common/config/feature-flags.config';
 import { GlobalExceptionFilter } from './common/filters/global-exception.filter';
+import { AuditInterceptor } from './common/interceptors/audit.interceptor';
+import { AuditService } from './common/services/audit.service';
 
 async function bootstrap(): Promise<void> {
   const app = await NestFactory.create(AppModule, {
@@ -14,6 +17,15 @@ async function bootstrap(): Promise<void> {
 
   // Registra o filtro global de exceções
   app.useGlobalFilters(new GlobalExceptionFilter());
+
+  // Configuração de auditoria global
+  const auditService = app.get(AuditService);
+  const featureFlags = app.get(FeatureFlagsConfig);
+  const reflector = app.get(Reflector);
+
+  app.useGlobalInterceptors(
+    new AuditInterceptor(auditService, featureFlags, reflector),
+  );
 
   // Habilita validação global usando class-validator e class-transformer
   app.useGlobalPipes(
@@ -33,6 +45,7 @@ async function bootstrap(): Promise<void> {
   const port = process.env.PORT ?? 3000;
   await app.listen(port);
   logger.log(`Aplicação está rodando na porta ${port}`);
+  logger.log('Sistema de auditoria configurado globalmente');
 }
 
 // Adiciona tratamento de erro para a inicialização

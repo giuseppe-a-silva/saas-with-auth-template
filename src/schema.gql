@@ -8,11 +8,21 @@ type AuthPayload {
   accessToken: String!
 }
 
+"""Status de saúde de um canal de notificação"""
 type ChannelHealthStatus {
+  """Nome do canal de notificação"""
   channel: String!
+
+  """Indica se o canal está configurado"""
   isConfigured: Boolean!
+
+  """Indica se o canal está funcionando corretamente"""
   isHealthy: Boolean!
+
+  """Provedor do canal (ex: SendGrid, Twilio)"""
   provider: String!
+
+  """Timeout configurado para o canal em milissegundos"""
   timeout: Float
 }
 
@@ -68,10 +78,12 @@ type Mutation {
 
   """Registra novo usuário no sistema"""
   register(registerInput: RegisterDto!): User!
+
+  """Envia uma notificação usando um template específico"""
   sendNotification(input: SendNotificationDto!): NotificationResult!
 
   """Atualiza o perfil do usuário autenticado."""
-  updateMyProfile(updateUserInput: UpdateUserInput!): User!
+  updateMyProfile(updateUserInput: UpdateUserDto!): User!
 }
 
 """Categorias de notificação disponíveis no sistema"""
@@ -91,11 +103,21 @@ enum NotificationChannel {
   THIRD_PARTY
 }
 
+"""Resultado do envio de uma notificação"""
 type NotificationResult {
+  """Mensagem de erro caso tenha ocorrido algum problema"""
   error: String
+
+  """ID externo fornecido pelo provedor de notificação"""
   externalId: String
+
+  """Metadados adicionais do envio em formato JSON"""
   metadata: String
+
+  """Data e hora em que a notificação foi enviada"""
   sentAt: DateTime
+
+  """Status do envio da notificação"""
   status: String!
 }
 
@@ -138,7 +160,11 @@ type Query {
 
   """Busca um usuário pelo seu ID."""
   findUserById(id: ID!): User
+
+  """Verifica o status de saúde dos canais de notificação configurados"""
   getChannelsHealthStatus: [ChannelHealthStatus!]!
+
+  """Obtém estatísticas do sistema de retry de notificações"""
   getRetryStatistics: RetryStatistics!
 
   """Retorna os dados do usuário autenticado atualmente."""
@@ -183,11 +209,21 @@ input RegisterDto {
   username: String!
 }
 
+"""Estatísticas do sistema de retry de notificações"""
 type RetryStatistics {
+  """Número de notificações que falharam"""
   failed: Float!
+
+  """Número de notificações pendentes"""
   pending: Float!
+
+  """Número de notificações sendo reenviadas"""
   retrying: Float!
+
+  """Número de notificações enviadas com sucesso"""
   success: Float!
+
+  """Número total de notificações"""
   total: Float!
 }
 
@@ -223,9 +259,14 @@ type SimpleStatusPayload {
 }
 
 """Dados para atualizar um usuário existente"""
-input UpdateUserInput {
+input UpdateUserDto {
+  """Email do usuário"""
   email: String
+
+  """Nova senha do usuário (opcional)"""
   password: String
+
+  """Nome de usuário único"""
   username: String
 }
 

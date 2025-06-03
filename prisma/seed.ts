@@ -116,6 +116,99 @@ FROM: security@edumatch.com
     channel: NotificationChannel.EMAIL,
     isActive: true,
   },
+  {
+    name: 'auth-email-verification',
+    title: 'Verificação de Email - EduMatch',
+    content: `SUBJECT: Verifique seu email - EduMatch ✉️
+FROM: verification@edumatch.com
+---
+<h1>✉️ Verificação de Email</h1>
+<p>Olá {{ userName }},</p>
+<p>Obrigado por se cadastrar no EduMatch! Para completar seu registro, precisamos verificar seu endereço de email.</p>
+<p>Clique no botão abaixo para verificar sua conta:</p>
+<div style="text-align: center; margin: 30px 0;">
+  <a href="{{ verificationUrl }}" style="background: #28a745; color: white; padding: 15px 30px; text-decoration: none; border-radius: 6px; font-weight: bold; font-size: 16px;">Verificar Email</a>
+</div>
+<p><strong>⏰ Este link expira em 24 horas.</strong></p>
+<p>Se você não se cadastrou no EduMatch, pode ignorar este email.</p>
+<hr>
+<p><small>Se o botão não funcionar, copie e cole este link no seu navegador: {{ verificationUrl }}</small></p>
+<p><small>Equipe EduMatch | <a href="{{ supportUrl }}">Central de Ajuda</a></small></p>`,
+    category: NotificationCategory.AUTH,
+    channel: NotificationChannel.EMAIL,
+    isActive: true,
+  },
+  {
+    name: 'auth-password-changed',
+    title: 'Senha Alterada com Sucesso',
+    content: `SUBJECT: Sua senha foi alterada - EduMatch 🔐
+FROM: security@edumatch.com
+---
+<h2>🔐 Senha Alterada com Sucesso</h2>
+<p>Olá {{ userName }},</p>
+<p>Sua senha foi alterada com sucesso em <strong>{{ changeDate }}</strong> às <strong>{{ changeTime }}</strong>.</p>
+<h3>📋 Detalhes da alteração:</h3>
+<ul>
+  <li><strong>Data:</strong> {{ changeDate }}</li>
+  <li><strong>Horário:</strong> {{ changeTime }}</li>
+  <li><strong>IP:</strong> {{ ipAddress }}</li>
+  <li><strong>Dispositivo:</strong> {{ device }}</li>
+</ul>
+<p>Se foi você quem alterou a senha, pode ignorar este email. Sua conta está segura.</p>
+<div style="background: #fff3cd; padding: 15px; border-left: 4px solid #ffc107; margin: 20px 0;">
+  <p><strong>⚠️ Se você NÃO alterou sua senha:</strong></p>
+  <ol>
+    <li>Acesse sua conta imediatamente</li>
+    <li>Altere sua senha novamente</li>
+    <li>Entre em contato com nosso suporte</li>
+  </ol>
+</div>
+<a href="{{ securityUrl }}" style="background: #dc3545; color: white; padding: 12px 24px; text-decoration: none; border-radius: 4px;">Verificar Segurança da Conta</a>
+<hr>
+<p><small>Por sua segurança, nunca compartilhe suas credenciais com terceiros.</small></p>`,
+    category: NotificationCategory.AUTH,
+    channel: NotificationChannel.EMAIL,
+    isActive: true,
+  },
+  {
+    name: 'auth-data-changed',
+    title: 'Dados da Conta Alterados',
+    content: `SUBJECT: Dados da sua conta foram alterados - EduMatch 📝
+FROM: security@edumatch.com
+---
+<h2>📝 Dados da Conta Alterados</h2>
+<p>Olá {{ userName }},</p>
+<p>Informamos que alguns dados da sua conta foram alterados em <strong>{{ changeDate }}</strong> às <strong>{{ changeTime }}</strong>.</p>
+<h3>📋 Alterações realizadas:</h3>
+<ul>
+{% for change in changes %}
+  <li><strong>{{ change.field }}:</strong> {{ change.oldValue }} → {{ change.newValue }}</li>
+{% endfor %}
+</ul>
+<h3>🔍 Detalhes da alteração:</h3>
+<ul>
+  <li><strong>Data:</strong> {{ changeDate }}</li>
+  <li><strong>Horário:</strong> {{ changeTime }}</li>
+  <li><strong>IP:</strong> {{ ipAddress }}</li>
+  <li><strong>Dispositivo:</strong> {{ device }}</li>
+</ul>
+<p>Se foi você quem fez essas alterações, pode ignorar este email.</p>
+<div style="background: #fff3cd; padding: 15px; border-left: 4px solid #ffc107; margin: 20px 0;">
+  <p><strong>⚠️ Se você NÃO fez essas alterações:</strong></p>
+  <ol>
+    <li>Acesse sua conta imediatamente</li>
+    <li>Verifique seus dados</li>
+    <li>Altere sua senha</li>
+    <li>Entre em contato com nosso suporte</li>
+  </ol>
+</div>
+<a href="{{ securityUrl }}" style="background: #dc3545; color: white; padding: 12px 24px; text-decoration: none; border-radius: 4px;">Verificar Segurança da Conta</a>
+<hr>
+<p><small>Equipe EduMatch | <a href="{{ supportUrl }}">Central de Ajuda</a></small></p>`,
+    category: NotificationCategory.AUTH,
+    channel: NotificationChannel.EMAIL,
+    isActive: true,
+  },
 
   // TEMPLATES DE LEADS
   {

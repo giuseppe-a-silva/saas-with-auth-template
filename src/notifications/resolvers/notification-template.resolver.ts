@@ -1,4 +1,6 @@
 import { Args, Mutation, Query, Resolver } from '@nestjs/graphql';
+import { AuditActionType } from '@prisma/client';
+import { Audit } from '../../common/interceptors/audit.interceptor';
 import { CreateTemplateDto } from '../dto/create-template.dto';
 import { NotificationTemplate } from '../entities/notification-template.entity';
 import { NotificationChannel } from '../interfaces/notification-dispatcher.interface';
@@ -44,6 +46,9 @@ export class NotificationTemplateResolver {
    * @param user Usuário autenticado
    * @returns Template criado
    */
+  @Audit(AuditActionType.TEMPLATE_CREATED, {
+    includeRequestBody: true,
+  })
   @Mutation(() => NotificationTemplate, {
     description: 'Cria um novo template de notificação',
   })

@@ -1,10 +1,10 @@
 import { Injectable, Logger } from '@nestjs/common';
 import { ConfigService } from '@nestjs/config';
-import { Prisma } from '@prisma/client';
+import { AuditActionType, Prisma } from '@prisma/client';
 import * as fs from 'fs/promises';
 import * as path from 'path';
 import { PrismaService } from '../../database/prisma.service';
-import { AuditActionType, AuditConfig } from '../config/audit.config';
+import { AuditConfig } from '../config/audit.config';
 import { FeatureFlagsConfig } from '../config/feature-flags.config';
 import {
   AuditCleanupResult,

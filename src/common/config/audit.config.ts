@@ -1,25 +1,6 @@
 import { Injectable } from '@nestjs/common';
 import { ConfigService } from '@nestjs/config';
-
-/**
- * Tipos de ações auditáveis no sistema
- */
-export enum AuditActionType {
-  LOGIN = 'LOGIN',
-  LOGOUT = 'LOGOUT',
-  LOGIN_FAILED = 'LOGIN_FAILED',
-  PASSWORD_CHANGE = 'PASSWORD_CHANGE',
-  DATA_UPDATE = 'DATA_UPDATE',
-  ACCESS_DENIED = 'ACCESS_DENIED',
-  PERMISSION_CHECK = 'PERMISSION_CHECK',
-  TOKEN_REFRESH = 'TOKEN_REFRESH',
-  ACCOUNT_LOCKED = 'ACCOUNT_LOCKED',
-  NOTIFICATION_SENT = 'NOTIFICATION_SENT',
-  NOTIFICATION_FAILED = 'NOTIFICATION_FAILED',
-  TEMPLATE_CREATED = 'TEMPLATE_CREATED',
-  TEMPLATE_UPDATED = 'TEMPLATE_UPDATED',
-  TEMPLATE_DELETED = 'TEMPLATE_DELETED',
-}
+import { AuditActionType } from '@prisma/client';
 
 /**
  * Configuração de retenção de logs por tipo de ação
@@ -28,7 +9,13 @@ export interface AuditRetentionConfig {
   [AuditActionType.LOGIN]: number; // 180 dias
   [AuditActionType.LOGOUT]: number; // 180 dias
   [AuditActionType.LOGIN_FAILED]: number; // 90 dias
+  [AuditActionType.USER_LOGIN]: number; // 180 dias
+  [AuditActionType.USER_LOGOUT]: number; // 180 dias
+  [AuditActionType.USER_REGISTER]: number; // 365 dias
   [AuditActionType.PASSWORD_CHANGE]: number; // 1 ano
+  [AuditActionType.PASSWORD_RESET_REQUEST]: number; // 1 ano
+  [AuditActionType.PASSWORD_RESET_CONFIRM]: number; // 1 ano
+  [AuditActionType.EMAIL_VERIFICATION]: number; // 365 dias
   [AuditActionType.DATA_UPDATE]: number; // 1 ano
   [AuditActionType.ACCESS_DENIED]: number; // 90 dias
   [AuditActionType.PERMISSION_CHECK]: number; // 90 dias
@@ -84,8 +71,32 @@ export class AuditConfig {
         'AUDIT_RETENTION_LOGIN_FAILED',
         90,
       ),
+      [AuditActionType.USER_LOGIN]: this.configService.get<number>(
+        'AUDIT_RETENTION_USER_LOGIN',
+        180,
+      ),
+      [AuditActionType.USER_LOGOUT]: this.configService.get<number>(
+        'AUDIT_RETENTION_USER_LOGOUT',
+        180,
+      ),
+      [AuditActionType.USER_REGISTER]: this.configService.get<number>(
+        'AUDIT_RETENTION_USER_REGISTER',
+        365,
+      ),
       [AuditActionType.PASSWORD_CHANGE]: this.configService.get<number>(
         'AUDIT_RETENTION_PASSWORD_CHANGE',
+        365,
+      ),
+      [AuditActionType.PASSWORD_RESET_REQUEST]: this.configService.get<number>(
+        'AUDIT_RETENTION_PASSWORD_RESET_REQUEST',
+        365,
+      ),
+      [AuditActionType.PASSWORD_RESET_CONFIRM]: this.configService.get<number>(
+        'AUDIT_RETENTION_PASSWORD_RESET_CONFIRM',
+        365,
+      ),
+      [AuditActionType.EMAIL_VERIFICATION]: this.configService.get<number>(
+        'AUDIT_RETENTION_EMAIL_VERIFICATION',
         365,
       ),
       [AuditActionType.DATA_UPDATE]: this.configService.get<number>(

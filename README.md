@@ -1,266 +1,336 @@
-# NestJS CASL Auth Canvas: Framework Base para Autenticação e Autorização
+# 🎯 EduMatch - Sistema de Autenticação e Notificações
 
-Este projeto, `nestjs-casl-auth-canvas`, serve como um framework robusto e desacoplado para aplicações modernas construídas com NestJS. Ele centraliza funcionalidades críticas de autenticação, autorização e controle de permissões (ACL), utilizando tecnologias atuais e aderindo a práticas recomendadas de desenvolvimento, com foco primordial em manutenibilidade, clareza e escalabilidade.
+Sistema completo de autenticação baseado em **NestJS + GraphQL + TypeScript** com funcionalidades avançadas de segurança, notificações e auditoria.
 
-O objetivo principal é fornecer um ponto de partida seguro e reutilizável para novos sistemas, permitindo que a lógica de autenticação e autorização seja facilmente integrada via módulos, bibliotecas internas ou até mesmo exposta como um microsserviço dedicado.
+## 📋 Funcionalidades Implementadas
 
-## ✨ Funcionalidades Principais
+### 🔐 **Sistema de Autenticação Completo**
 
-O framework implementa um conjunto abrangente de funcionalidades essenciais para segurança e gerenciamento de acesso em aplicações web:
+#### ✅ **Autenticação e Autorização**
 
-- **Autenticação Segura via JWT:** Utiliza JSON Web Tokens (JWT) para autenticação, implementando tokens de acesso (access tokens) de curta duração e tokens de atualização (refresh tokens) de longa duração. Os refresh tokens são gerenciados de forma segura através de cookies `HttpOnly`, com suporte a _sliding sessions_ para renovação automática.
-- **Autorização Flexível com CASL:** Emprega a biblioteca CASL (Control Access Specification Language) para um controle de permissões granular e dinâmico. As políticas de permissão são armazenadas diretamente no banco de dados, permitindo fácil gerenciamento e adaptação sem necessidade de rediploys.
-- **Integração com Prisma e PostgreSQL:** Utiliza o Prisma ORM para interação com um banco de dados PostgreSQL, garantindo tipagem forte, migrações simplificadas e um acesso eficiente aos dados.
-- **API GraphQL Code-First:** Expõe a funcionalidade através de uma API GraphQL, adotando a abordagem _code-first_ do NestJS para uma definição de schema clara e fortemente tipada, diretamente a partir do código TypeScript.
-- **Gerenciamento de Usuários Simplificado:** Inclui um módulo básico para gerenciamento de usuários, suportando inicialmente um papel único por usuário (single-role), mas projetado para extensibilidade.
-- **Arquitetura Modular e Desacoplada:** Segue os princípios de design modular do NestJS, separando responsabilidades por domínios (auth, casl, users, permissions), promovendo baixo acoplamento e alta coesão.
-- **Tipagem Rigorosa com TypeScript:** Todo o código é escrito em TypeScript com modo estrito habilitado, garantindo segurança de tipos e prevenindo erros comuns em tempo de desenvolvimento.
-- **Pronto para Testes:** Configurado com Jest para testes unitários e de integração, incentivando a cobertura de testes para garantir a qualidade e a robustez do código.
-- **Preparado para Extensões:** A arquitetura foi pensada para facilitar futuras evoluções, como suporte a multi-tenancy, múltiplos papéis por usuário e integração com painéis de administração externos.
+- **Login/Logout** com JWT + Refresh Token
+- **Registro de usuários** com validação robusta
+- **Verificação obrigatória de email**
+- **Sistema de permissões** baseado em CASL
+- **Rate limiting** em todos os endpoints sensíveis
 
-## 🏗️ Arquitetura
+#### ✅ **Gerenciamento de Senhas**
 
-A estrutura do projeto é organizada em módulos funcionais, seguindo as melhores práticas do NestJS:
+- **Alteração de senha** com validação da senha atual
+- **Recuperação de senha** via email com tokens seguros
+- **Redefinição de senha** com tokens de 24h
+- **Validação de senhas fortes** (maiúscula, minúscula, número, caractere especial)
+- **Notificações automáticas** de alterações de segurança
 
-- `src/`: Diretório principal do código-fonte.
-  - `main.ts`: Ponto de entrada da aplicação.
-  - `app.module.ts`: Módulo raiz que importa os demais módulos.
-  - `config/`: Módulo para gerenciamento de configurações e variáveis de ambiente (`.env`).
-  - `database/`: Módulo global que fornece o `PrismaService` para interação com o banco de dados.
-  - `common/`: Contém utilitários compartilhados, como decorators (`@CurrentUser`, `@Public`), filtros de exceção, etc.
-  - `auth/`: Módulo responsável pela autenticação (JWT, Passport strategies, guards, DTOs, service, resolver GraphQL).
-  - `users/`: Módulo para gerenciamento de usuários (entidade, service, resolver GraphQL).
-  - `permissions/`: Módulo para gerenciar as entidades de permissão no banco de dados (entidade, service).
-  - `casl/`: Módulo de autorização que integra o CASL (ability factory, guard, decorators).
-- `prisma/`: Contém o schema do Prisma (`schema.prisma`) e as migrações.
-- `tests/`: Diretório para testes unitários (`*.spec.ts`) e de integração (`*.e2e-spec.ts`).
-- `.env.example`: Arquivo de exemplo para as variáveis de ambiente.
-- `README.md`: Esta documentação.
+#### ✅ **Verificação de Email**
 
-## 🚀 Começando
+- **Verificação obrigatória** no primeiro login
+- **Tokens de verificação** com expiração de 24h
+- **Reenvio de emails** de verificação
+- **Integração completa** com sistema de notificações
 
-Siga os passos abaixo para configurar e executar o projeto localmente.
+### 📧 **Sistema de Notificações**
 
-### Pré-requisitos
+#### ✅ **Múltiplos Canais**
 
-- Node.js (versão LTS recomendada, verifique a versão no `.nvmrc` ou `package.json`)
-- npm (geralmente instalado com o Node.js)
-- Docker e Docker Compose (para executar o banco de dados PostgreSQL facilmente)
-- Git (para clonar o repositório)
+- **Email** (SMTP padrão + AWS SES)
+- **Push Notifications**
+- **Notificações em tempo real** (WebSocket)
+- **Webhooks** para integração com terceiros
 
-### Instalação
+#### ✅ **Templates Inteligentes**
 
-1. **Clone o repositório:**
+- **Sistema de templates** com Nunjucks
+- **Templates específicos** para cada tipo de notificação
+- **Fallback automático** entre canais
+- **Personalização** por usuário/categoria
 
-   ```bash
-   git clone <url-do-repositorio>
-   cd nestjs-casl-auth-canvas
-   ```
+#### ✅ **Funcionalidades Avançadas**
 
-2. **Instale as dependências:**
+- **Rate limiting** para prevenção de spam
+- **Sistema de retry** com backoff exponencial
+- **Auditoria completa** de envios
+- **Disparo em lote** e **agendamento**
 
-   ```bash
-   npm install
-   ```
+### 🔒 **Segurança e Auditoria**
 
-3. **Configure as Variáveis de Ambiente:**
+#### ✅ **Auditoria Completa**
 
-   - Copie o arquivo de exemplo: `cp .env.example .env`
-   - Edite o arquivo `.env` e preencha as variáveis, especialmente `DATABASE_URL`, `JWT_SECRET` e `JWT_REFRESH_SECRET`. Use segredos fortes e únicos para JWT.
+- **Logs estruturados** de todas as ações sensíveis
+- **Rastreamento de IP, User-Agent** e metadados
+- **Retenção configurável** por tipo de ação
+- **Integração com analytics** externos
 
-4. **Inicie o Banco de Dados PostgreSQL (usando Docker):**
+#### ✅ **Notificações de Segurança**
 
-   - Certifique-se de que o Docker esteja em execução.
-   - Execute o comando abaixo para iniciar um container PostgreSQL com as credenciais definidas no seu `.env` (ajuste se necessário):
+- **Alertas de login** suspeito
+- **Notificações de alteração** de dados
+- **Avisos de alteração** de senha
+- **Detecção de novos dispositivos**
 
-     ```bash
-     # Exemplo (use as credenciais do seu .env):
-     docker run --name postgres-db -e POSTGRES_USER=user -e POSTGRES_PASSWORD=password -e POSTGRES_DB=mydb -p 5432:5432 -d postgres
-     ```
+#### ✅ **Proteções Implementadas**
 
-   - _Alternativa:_ Se você já possui uma instância PostgreSQL rodando, apenas configure a `DATABASE_URL` no `.env` para apontar para ela.
+- **Rate limiting** por IP/usuário/endpoint
+- **Proteção contra timing attacks**
+- **Sanitização** de dados sensíveis nos logs
+- **Tokens criptograficamente seguros**
+- **Validação rigorosa** de entrada
 
-5. **Execute as Migrações do Prisma:**
+## 🚀 Como Usar
 
-   - Este comando aplicará as migrações pendentes e criará as tabelas no banco de dados conforme definido em `prisma/schema.prisma`.
+### **Mutations GraphQL Disponíveis**
 
-   ```bash
-   npx prisma migrate dev
-   ```
+#### **Autenticação**
 
-   - Ele também gerará o Prisma Client.
-
-### Executando a Aplicação
-
-- **Modo de Desenvolvimento (com hot-reload):**
-
-  ```bash
-  npm run start:dev
-  ```
-
-  A aplicação estará disponível em `http://localhost:3000` (ou a porta configurada).
-  O endpoint GraphQL geralmente fica em `http://localhost:3000/graphql`.
-
-- **Modo de Produção:**
-
-  ```bash
-  npm run build
-  npm run start:prod
-  ```
-
-- **Executando Testes:**
-
-  - Testes Unitários:
-
-    ```bash
-    npm run test
-    ```
-
-  - Testes End-to-End (E2E):
-
-    ```bash
-    npm run test:e2e
-    ```
-
-  - Testes com Cobertura:
-
-    ```bash
-    npm run test:cov
-    ```
-
-## ⚙️ Uso da API (GraphQL)
-
-Acesse o GraphQL Playground (ou Apollo Sandbox) em `http://localhost:3000/graphql` para interagir com a API.
-
-### Exemplos de Operações
-
-- **Registro de Usuário:**
-
-  ```graphql
-  mutation Register($registerInput: RegisterDto!) {
-    register(registerInput: $registerInput) {
-      id
-      email
-      username
-      role
-    }
+```graphql
+# Login do usuário
+mutation {
+  login(
+    loginInput: { identifier: "user@example.com", password: "senhaSegura123!" }
+  ) {
+    accessToken
   }
-  # Variáveis:
-  # { "registerInput": { "email": "user@example.com", "username": "newuser", "password": "password123" } }
-  ```
+}
 
-- **Login:**
-
-  ```graphql
-  mutation Login($loginInput: LoginDto!) {
-    login(loginInput: $loginInput) {
-      accessToken
+# Registro de novo usuário
+mutation {
+  register(
+    registerInput: {
+      email: "novo@example.com"
+      username: "novousuario"
+      password: "senhaSegura123!"
     }
+  ) {
+    id
+    email
+    username
+    emailVerified
   }
-  # Variáveis:
-  # { "loginInput": { "identifier": "user@example.com", "password": "password123" } }
-  ```
+}
 
-  _Observação:_ O refresh token será definido automaticamente em um cookie `HttpOnly`.
+# Verificação de email
+mutation {
+  verifyEmail(verifyEmailInput: { token: "token-recebido-por-email" }) {
+    success
+    message
+  }
+}
+```
 
-- **Obter Dados do Usuário Logado (requer token de acesso):**
+#### **Gerenciamento de Senha**
 
-  - Inclua o `accessToken` no header `Authorization: Bearer <token>`.
-
-  ```graphql
-  query Me {
-    me {
-      id
-      email
-      username
-      role
+```graphql
+# Alteração de senha (usuário logado)
+mutation {
+  changePassword(
+    changePasswordInput: {
+      currentPassword: "senhaAtual123!"
+      newPassword: "novaSenhaSegura456!"
     }
+  ) {
+    success
+    message
   }
-  ```
+}
 
-- **Renovar Token de Acesso (requer cookie de refresh token válido):**
+# Solicitar recuperação de senha
+mutation {
+  forgotPassword(forgotPasswordInput: { email: "user@example.com" }) {
+    success
+    message
+  }
+}
 
-  ```graphql
-  mutation RefreshToken {
-    refreshToken {
-      accessToken
+# Redefinir senha com token
+mutation {
+  resetPassword(
+    resetPasswordInput: {
+      token: "token-recebido-por-email"
+      newPassword: "novaSenhaSegura123!"
     }
+  ) {
+    success
+    message
   }
-  ```
+}
+```
 
-- **Buscar Usuário por ID (requer permissão de leitura em User):**
+#### **Tokens e Logout**
 
-  - Inclua o `accessToken` no header `Authorization: Bearer <token>`.
-
-  ```graphql
-  query FindUser($userId: ID!) {
-    findUserById(id: $userId) {
-      id
-      email
-      username
-    }
+```graphql
+# Renovar access token
+mutation {
+  refreshToken {
+    accessToken
   }
-  # Variáveis:
-  # { "userId": "some-user-id" }
-  ```
+}
 
-## 🛡️ Fluxos de Autenticação e Autorização
+# Logout
+mutation {
+  logout {
+    success
+    message
+  }
+}
+```
 
-### Autenticação
+### **Rate Limits Configurados**
 
-1. O usuário envia credenciais (email/username + senha) via mutação `login`.
-2. O `AuthService` valida as credenciais contra o banco de dados.
-3. Se válidas, gera um `accessToken` (curta duração) e um `refreshToken` (longa duração).
-4. O `accessToken` é retornado na resposta da mutação.
-5. O `refreshToken` é armazenado em um cookie `HttpOnly`, `Secure` (em produção), `SameSite=Strict`.
-6. Para acessar rotas protegidas, o cliente envia o `accessToken` no header `Authorization: Bearer <token>`.
-7. O `JwtAuthGuard` intercepta a requisição, valida o `accessToken` usando `JwtStrategy`.
-8. Se o `accessToken` expirar, o cliente usa a mutação `refreshToken`. O `RefreshJwtGuard` valida o `refreshToken` do cookie usando `RefreshJwtStrategy` e, se válido, o `AuthService` gera um novo `accessToken`.
-9. O `logout` limpa o cookie do `refreshToken`.
+| Endpoint         | Limite        | Janela | Observações |
+| ---------------- | ------------- | ------ | ----------- |
+| `register`       | 3 tentativas  | 5 min  | Por IP      |
+| `login`          | 5 tentativas  | 1 min  | Por IP      |
+| `forgotPassword` | 3 tentativas  | 1 hora | Por email   |
+| `resetPassword`  | 5 tentativas  | 1 hora | Por token   |
+| `changePassword` | 5 tentativas  | 1 hora | Por usuário |
+| `verifyEmail`    | 10 tentativas | 1 hora | Por token   |
 
-### Autorização (CASL)
+### **Templates de Notificação**
 
-1. Rotas/Mutations/Queries que exigem permissões específicas são decoradas com `@UseGuards(CaslGuard)` e `@CheckPermissions({ action: Action.Read, subject: 'User' })`.
-2. O `JwtAuthGuard` (executado antes) garante que o usuário esteja autenticado e anexa o objeto `user` à requisição.
-3. O `CaslGuard` é ativado.
-4. Ele obtém o usuário da requisição e as regras de permissão (`RequiredRule`) definidas pelo decorator `@CheckPermissions`.
-5. O `CaslGuard` utiliza a `CaslAbilityFactory` para construir o objeto `Ability` do usuário.
-6. A `CaslAbilityFactory`:
-   - Define permissões básicas com base no `Role` do usuário (ex: ADMIN pode `manage all`).
-   - Busca permissões adicionais específicas do usuário no banco de dados (tabela `Permission`) através do `PermissionsService`.
-   - Combina as permissões baseadas em role e as do banco (incluindo condições e regras `cannot`) para construir o `Ability` final.
-7. O `CaslGuard` usa o `Ability` gerado para verificar se o usuário `can(action, subject)` para _todas_ as `RequiredRule` definidas no decorator.
-8. Se todas as permissões forem satisfeitas, o acesso é concedido. Caso contrário, uma `ForbiddenException` é lançada.
+#### **Templates de Autenticação**
 
-## 📜 Regras de Código e Estilo
+- `auth-email-verification` - Verificação de email
+- `auth-password-reset` - Recuperação de senha
+- `auth-password-changed` - Senha alterada
+- `auth-login-notification` - Notificação de login
+- `auth-data-changed` - Dados alterados
+- `auth-welcome` - Boas-vindas
 
-O projeto segue um conjunto rigoroso de regras para garantir a qualidade e a consistência do código:
+#### **Templates de Sistema**
 
-- **Linguagem:** PT-BR para código e documentação.
-- **Tipagem:** TypeScript estrito, sem `any`, tipos explícitos para variáveis, parâmetros e retornos.
-- **Nomenclatura:** PascalCase (classes), camelCase (variáveis, métodos), kebab-case (arquivos, pastas), UPPERCASE (env vars).
-- **Organização:** Um export por arquivo, evitar números mágicos, funções curtas e com um nível de abstração, usar early returns.
-- **Imutabilidade:** Preferir `readonly` e `as const`.
-- **Classes:** Princípios SOLID, composição sobre herança, limites de tamanho/complexidade.
-- **Erros:** Exceções para erros inesperados, handlers globais.
-- **Testes:** Convenção Arrange-Act-Assert, nomes claros, mocks/stubs.
-- **NestJS:** Arquitetura modular por domínio, DTOs com `class-validator`, encapsulamento entre módulos (interação via serviços).
-- **Linting/Formatting:** ESLint e Prettier configurados para garantir a conformidade.
+- `system-maintenance` - Manutenção programada
+- `system-error-alert` - Alertas de erro
 
-## 🛣️ Roadmap Futuro (Possíveis Extensões)
+## 🛠️ Configuração
 
-- Suporte a Multi-Tenancy (adicionar `tenantId` às entidades relevantes).
-- Suporte a Múltiplos Papéis por Usuário.
-- Criação de um painel de administração (frontend desacoplado) para gerenciamento visual de usuários e permissões.
-- Implementação de blacklist/revogação de refresh tokens.
-- Integração com outros provedores de autenticação (OAuth, SAML).
+### **Variáveis de Ambiente**
 
-## 🧩 Como Estender ou Integrar
+```bash
+# JWT
+JWT_SECRET=seu-jwt-secret-super-seguro
+JWT_ACCESS_TOKEN_EXPIRES_IN=15m
+JWT_REFRESH_TOKEN_EXPIRES_IN=7d
 
-Este framework pode ser usado como base para novos projetos NestJS ou integrado a projetos existentes:
+# Email
+EMAIL_VERIFICATION_EXPIRATION_HOURS=24
+PASSWORD_RESET_EXPIRATION_HOURS=24
 
-- **Como Base:** Clone o repositório e comece a construir seus módulos de negócio sobre ele.
-- **Como Biblioteca Interna:** Refatore os módulos principais (auth, casl, users, permissions) para serem publicados como pacotes npm privados ou bibliotecas internas do NestJS.
-- **Como Microsserviço:** Dockerize a aplicação e exponha a API GraphQL para outros serviços consumirem.
+# Aplicação
+APP_BASE_URL=http://localhost:3000
 
-Lembre-se de adaptar as entidades, DTOs e permissões CASL às necessidades específicas do seu domínio.
+# Auditoria
+AUDIT_ENABLED=true
+AUDIT_DETAILED_LOGS=true
+
+# Rate Limiting
+RATE_LIMIT_ENABLED=true
+```
+
+### **Banco de Dados**
+
+```bash
+# Aplicar migrações
+npx prisma migrate deploy
+
+# Gerar cliente Prisma
+npx prisma generate
+
+# Executar seed (templates de notificação)
+npm run db:seed
+```
+
+## 📊 Logs e Auditoria
+
+### **Tipos de Auditoria**
+
+- `USER_LOGIN` - Login de usuário
+- `USER_LOGOUT` - Logout de usuário
+- `USER_REGISTER` - Registro de usuário
+- `PASSWORD_CHANGE` - Alteração de senha
+- `PASSWORD_RESET_REQUEST` - Solicitação de recuperação
+- `PASSWORD_RESET_CONFIRM` - Confirmação de recuperação
+- `EMAIL_VERIFICATION` - Verificação de email
+- `TOKEN_REFRESH` - Renovação de token
+
+### **Estrutura dos Logs**
+
+```json
+{
+  "userId": "uuid",
+  "action": "USER_LOGIN",
+  "ipAddress": "192.168.1.1",
+  "userAgent": "Mozilla/5.0...",
+  "endpoint": "/graphql",
+  "method": "POST",
+  "success": true,
+  "timestamp": "2025-06-03T15:30:00.000Z",
+  "responseTime": 245,
+  "requestData": {
+    "body": "[SANITIZED]"
+  }
+}
+```
+
+## 🔧 Arquitetura
+
+### **Módulos Principais**
+
+- **AuthModule** - Autenticação, autorização e segurança
+- **UsersModule** - Gerenciamento de usuários
+- **NotificationsModule** - Sistema de notificações
+- **AuditModule** - Auditoria e logs
+
+### **Serviços Especializados**
+
+- `AuthenticationService` - Lógica de autenticação
+- `PasswordService` - Gerenciamento de senhas
+- `TokenService` - Geração e validação de JWT
+- `EmailVerificationService` - Verificação de email
+- `PasswordResetService` - Recuperação de senha
+- `SecurityNotificationService` - Notificações de segurança
+
+## 🧪 Testes
+
+```bash
+# Testes unitários
+npm run test
+
+# Testes com coverage
+npm run test:cov
+
+# Testes e2e
+npm run test:e2e
+
+# Build do projeto
+npm run build
+```
+
+## 📚 Documentação Adicional
+
+### **Fluxos Implementados**
+
+1. **Registro de Usuário**
+
+   - Validação de dados → Criação do usuário → Envio de email de verificação
+
+2. **Login**
+
+   - Verificação de credenciais → Verificação de email → Geração de tokens → Notificação de login
+
+3. **Recuperação de Senha**
+
+   - Solicitação → Geração de token → Envio de email → Redefinição → Notificação de alteração
+
+4. **Alteração de Senha**
+   - Validação da senha atual → Atualização → Notificação de alteração
+
+### **Próximos Passos**
+
+- [ ] Implementar autenticação 2FA
+- [ ] Adicionar suporte a OAuth providers
+- [ ] Implementar sistema de sessões ativas
+- [ ] Adicionar métricas de segurança
+
+---
+
+**🎯 EduMatch** - Sistema robusto e seguro para autenticação e comunicação.

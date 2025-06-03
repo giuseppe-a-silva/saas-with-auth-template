@@ -1,7 +1,8 @@
 import { ConfigService } from '@nestjs/config';
 import { Test, TestingModule } from '@nestjs/testing';
+import { AuditActionType } from '@prisma/client';
 import { PrismaService } from '../../database/prisma.service';
-import { AuditActionType, AuditConfig } from '../config/audit.config';
+import { AuditConfig } from '../config/audit.config';
 import { FeatureFlagsConfig } from '../config/feature-flags.config';
 import { CreateAuditLogInput } from '../types/audit.types';
 import { AuditService } from './audit.service';

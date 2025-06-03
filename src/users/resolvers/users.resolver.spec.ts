@@ -1,5 +1,5 @@
 import { Test, TestingModule } from '@nestjs/testing';
-import { User as PrismaUser } from '@prisma/client';
+import { User as PrismaUser, Role } from '@prisma/client';
 import { CaslGuard } from '../../casl/guards/casl.guard';
 import { UsersService } from '../users.service';
 import { UsersResolver } from './users.resolver';
@@ -45,13 +45,18 @@ describe('UsersResolver', () => {
 
   describe('me', () => {
     const mockCurrentUser: PrismaUser = {
-      id: 'user-1',
-      email: 'user1@example.com',
-      username: 'user1',
-      password: 'hashedpassword1',
-      role: 'USER',
+      id: 'user-id',
+      email: 'current@example.com',
+      username: 'currentuser',
+      password: 'hashedPassword',
+      role: Role.USER,
       createdAt: new Date(),
       updatedAt: new Date(),
+      emailVerified: true,
+      emailVerificationToken: null,
+      emailVerificationTokenExpires: null,
+      passwordResetToken: null,
+      passwordResetTokenExpires: null,
     };
 
     it('deve retornar dados do usuário autenticado', () => {
@@ -63,22 +68,27 @@ describe('UsersResolver', () => {
 
   describe('findUserById', () => {
     const mockUser: PrismaUser = {
-      id: 'user-1',
-      email: 'user1@example.com',
-      username: 'user1',
-      password: 'hashedpassword1',
-      role: 'USER',
+      id: 'user-id',
+      email: 'user@example.com',
+      username: 'username',
+      password: 'hashedPassword',
+      role: Role.USER,
       createdAt: new Date(),
       updatedAt: new Date(),
+      emailVerified: true,
+      emailVerificationToken: null,
+      emailVerificationTokenExpires: null,
+      passwordResetToken: null,
+      passwordResetTokenExpires: null,
     };
 
     it('deve retornar usuário por ID válido', async () => {
       mockUsersService.findOneById.mockResolvedValue(mockUser);
 
-      const result = await resolver.findUserById('user-1');
+      const result = await resolver.findUserById('user-id');
 
       expect(result).toEqual(mockUser);
-      expect(usersService.findOneById).toHaveBeenCalledWith('user-1');
+      expect(usersService.findOneById).toHaveBeenCalledWith('user-id');
     });
 
     it('deve retornar null para ID não encontrado', async () => {
@@ -93,13 +103,18 @@ describe('UsersResolver', () => {
 
   describe('updateMyProfile', () => {
     const mockCurrentUser: PrismaUser = {
-      id: 'user-1',
-      email: 'user1@example.com',
-      username: 'user1',
-      password: 'hashedpassword1',
-      role: 'USER',
+      id: 'current-user-id',
+      email: 'current@example.com',
+      username: 'currentuser',
+      password: 'hashedPassword',
+      role: Role.USER,
       createdAt: new Date(),
       updatedAt: new Date(),
+      emailVerified: true,
+      emailVerificationToken: null,
+      emailVerificationTokenExpires: null,
+      passwordResetToken: null,
+      passwordResetTokenExpires: null,
     };
 
     const updateUserInput = {
@@ -124,7 +139,7 @@ describe('UsersResolver', () => {
 
       expect(result).toEqual(updatedUser);
       expect(usersService.updateUser).toHaveBeenCalledWith({
-        where: { id: 'user-1' },
+        where: { id: 'current-user-id' },
         data: {
           email: 'updated@example.com',
           username: 'updateduser',
@@ -155,7 +170,7 @@ describe('UsersResolver', () => {
 
       expect(result).toEqual(partialUpdatedUser);
       expect(usersService.updateUser).toHaveBeenCalledWith({
-        where: { id: 'user-1' },
+        where: { id: 'current-user-id' },
         data: { email: 'newemail@example.com' },
       });
     });

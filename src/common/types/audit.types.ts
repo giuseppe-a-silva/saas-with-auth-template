@@ -1,22 +1,4 @@
-/**
- * Tipos de ações auditáveis no sistema
- */
-export enum AuditActionType {
-  LOGIN = 'LOGIN',
-  LOGOUT = 'LOGOUT',
-  LOGIN_FAILED = 'LOGIN_FAILED',
-  PASSWORD_CHANGE = 'PASSWORD_CHANGE',
-  DATA_UPDATE = 'DATA_UPDATE',
-  ACCESS_DENIED = 'ACCESS_DENIED',
-  PERMISSION_CHECK = 'PERMISSION_CHECK',
-  TOKEN_REFRESH = 'TOKEN_REFRESH',
-  ACCOUNT_LOCKED = 'ACCOUNT_LOCKED',
-  NOTIFICATION_SENT = 'NOTIFICATION_SENT',
-  NOTIFICATION_FAILED = 'NOTIFICATION_FAILED',
-  TEMPLATE_CREATED = 'TEMPLATE_CREATED',
-  TEMPLATE_UPDATED = 'TEMPLATE_UPDATED',
-  TEMPLATE_DELETED = 'TEMPLATE_DELETED',
-}
+import { AuditActionType } from '@prisma/client';
 
 /**
  * Interface para dados da requisição a serem auditados

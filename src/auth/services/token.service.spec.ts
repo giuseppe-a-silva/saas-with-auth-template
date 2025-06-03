@@ -1,7 +1,7 @@
 import { ConfigService } from '@nestjs/config';
 import { JwtService } from '@nestjs/jwt';
 import { Test, TestingModule } from '@nestjs/testing';
-import { Role } from '@prisma/client';
+import { Role, User } from '@prisma/client';
 import { TokenService } from './token.service';
 
 describe('TokenService', () => {
@@ -48,13 +48,18 @@ describe('TokenService', () => {
 
   describe('generateTokens', () => {
     it('should generate access and refresh tokens', async () => {
-      const mockUser = {
-        id: '1',
+      const mockUser: Omit<User, 'password'> = {
+        id: 'user-id',
         email: 'test@example.com',
         username: 'testuser',
         role: Role.USER,
         createdAt: new Date(),
         updatedAt: new Date(),
+        emailVerified: true,
+        emailVerificationToken: null,
+        emailVerificationTokenExpires: null,
+        passwordResetToken: null,
+        passwordResetTokenExpires: null,
       };
 
       mockJwtService.signAsync

@@ -1,5 +1,5 @@
 import { Test, TestingModule } from '@nestjs/testing';
-import { Role } from '@prisma/client';
+import { User as PrismaUser, Role } from '@prisma/client';
 import { Response } from 'express';
 import { AuthService } from './auth.service';
 import { LoginDto } from './dto/login.dto';
@@ -168,13 +168,18 @@ describe('AuthService', () => {
   });
 
   describe('refreshToken', () => {
-    const user = {
-      id: '1',
+    const user: Omit<PrismaUser, 'password'> = {
+      id: 'user-id',
       email: 'test@example.com',
       username: 'testuser',
       role: Role.USER,
       createdAt: new Date(),
       updatedAt: new Date(),
+      emailVerified: true,
+      emailVerificationToken: null,
+      emailVerificationTokenExpires: null,
+      passwordResetToken: null,
+      passwordResetTokenExpires: null,
     };
 
     it('deve gerar e retornar um novo accessToken', async () => {

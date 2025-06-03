@@ -9,7 +9,7 @@ const mockPermissionsService = {
   findUserPermissions: jest.fn(),
 };
 
-// Exemplo de usuário para testes
+// Mocks
 const mockUserAdmin: Omit<User, 'password'> = {
   id: 'admin-id',
   email: 'admin@example.com',
@@ -17,6 +17,11 @@ const mockUserAdmin: Omit<User, 'password'> = {
   role: Role.ADMIN,
   createdAt: new Date(),
   updatedAt: new Date(),
+  emailVerified: true,
+  emailVerificationToken: null,
+  emailVerificationTokenExpires: null,
+  passwordResetToken: null,
+  passwordResetTokenExpires: null,
 };
 
 const mockUserEditor: Omit<User, 'password'> = {
@@ -26,6 +31,11 @@ const mockUserEditor: Omit<User, 'password'> = {
   role: Role.EDITOR,
   createdAt: new Date(),
   updatedAt: new Date(),
+  emailVerified: true,
+  emailVerificationToken: null,
+  emailVerificationTokenExpires: null,
+  passwordResetToken: null,
+  passwordResetTokenExpires: null,
 };
 
 const mockUserRegular: Omit<User, 'password'> = {
@@ -35,6 +45,11 @@ const mockUserRegular: Omit<User, 'password'> = {
   role: Role.USER,
   createdAt: new Date(),
   updatedAt: new Date(),
+  emailVerified: true,
+  emailVerificationToken: null,
+  emailVerificationTokenExpires: null,
+  passwordResetToken: null,
+  passwordResetTokenExpires: null,
 };
 
 describe('CaslAbilityFactory', () => {

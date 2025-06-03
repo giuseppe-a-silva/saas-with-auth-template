@@ -1,55 +1,15 @@
 import { ForbiddenException, UseGuards } from '@nestjs/common';
-import {
-  Args,
-  Field,
-  ID,
-  InputType,
-  Mutation,
-  PartialType,
-  Query,
-  Resolver,
-} from '@nestjs/graphql';
-import { Prisma, User as PrismaUser } from '@prisma/client'; // Importa PrismaUser
-import { IsEmail, IsString, MinLength } from 'class-validator';
+import { Args, ID, Mutation, Query, Resolver } from '@nestjs/graphql';
+import { AuditActionType, Prisma, User as PrismaUser } from '@prisma/client'; // Importa PrismaUser
 import { JwtAuthGuard } from '../../auth/guards/jwt-auth.guard';
 import { CheckPermissions } from '../../casl/decorators/check-permissions.decorator';
 import { CaslGuard } from '../../casl/guards/casl.guard';
 import { CurrentUser } from '../../common/decorators/current-user.decorator';
+import { Audit } from '../../common/interceptors/audit.interceptor';
 import { Action } from '../../permissions/entities/permission.entity';
+import { UpdateUserDto } from '../dto/update-user.dto';
 import { User as UserEntity } from '../entities/user.entity'; // Corrigindo caminho do import
 import { UsersService } from '../users.service';
-
-// Input Types (DTOs para GraphQL)
-@InputType({
-  description:
-    'Dados para criar um novo usuário (geralmente feito via registro)',
-})
-class CreateUserInput {
-  @Field()
-  @IsEmail()
-  email: string;
-
-  @Field()
-  @IsString()
-  username: string;
-
-  @Field()
-  @MinLength(8)
-  password: string;
-}
-
-@InputType({ description: 'Dados para atualizar um usuário existente' })
-class UpdateUserInput extends PartialType(CreateUserInput) {
-  // Não precisa do ID aqui, pois será pego do usuário logado ou de um argumento separado
-  // @Field(() => ID)
-  // id: string;
-
-  // Sobrescreve a senha para ser opcional na atualização
-  @Field({ nullable: true })
-  @MinLength(8)
-  @IsString()
-  password?: string;
-}
 
 /**
  * Resolver GraphQL responsável pelas operações de gerenciamento de usuários
@@ -146,12 +106,16 @@ export class UsersResolver {
    * ```
    */
   // Mutação para atualizar o próprio perfil (requer autenticação)
+  @Audit(AuditActionType.DATA_UPDATE, {
+    includeRequestBody: true,
+    sensitiveFields: ['password'],
+  })
   @Mutation(() => UserEntity, {
     description: 'Atualiza o perfil do usuário autenticado.',
   })
   async updateMyProfile(
     @CurrentUser() currentUser: PrismaUser,
-    @Args('updateUserInput') updateUserInput: UpdateUserInput,
+    @Args('updateUserInput') updateUserInput: UpdateUserDto,
   ): Promise<UserEntity> {
     // O ID do usuário a ser atualizado é o do usuário logado
     const userIdToUpdate = currentUser.id;
@@ -194,6 +158,9 @@ export class UsersResolver {
    * ```
    */
   // Mutação para deletar um usuário (requer permissão de delete)
+  @Audit(AuditActionType.DATA_UPDATE, {
+    includeRequestBody: true,
+  })
   @Mutation(() => UserEntity, {
     description: 'Deleta um usuário do sistema (requer permissão).',
   })

@@ -7,10 +7,10 @@ import {
   SetMetadata,
 } from '@nestjs/common';
 import { Reflector } from '@nestjs/core';
+import { AuditActionType } from '@prisma/client';
 import { Request, Response } from 'express';
 import { Observable } from 'rxjs';
 import { catchError, tap } from 'rxjs/operators';
-import { AuditActionType } from '../config/audit.config';
 import { FeatureFlagsConfig } from '../config/feature-flags.config';
 import { AuditService } from '../services/audit.service';
 import { CreateAuditLogInput } from '../types/audit.types';

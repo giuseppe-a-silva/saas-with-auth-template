@@ -33,6 +33,13 @@ export class User {
   // A senha NUNCA deve ser exposta na API GraphQL por questões de segurança
 
   /**
+   * Indica se o email do usuário foi verificado
+   * Usuários devem verificar email antes de fazer login
+   */
+  @Field(() => Boolean, { description: 'Indica se o email foi verificado' })
+  emailVerified: boolean;
+
+  /**
    * Papel (role) do usuário no sistema
    * Define o nível de acesso e permissões
    */

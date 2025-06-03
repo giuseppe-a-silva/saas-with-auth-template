@@ -1,8 +1,8 @@
 import { Test, TestingModule } from '@nestjs/testing';
-import { UsersService } from './users.service';
-import { PrismaService } from '../database/prisma.service';
 import { Role, User } from '@prisma/client';
 import * as bcrypt from 'bcrypt';
+import { PrismaService } from '../database/prisma.service';
+import { UsersService } from './users.service';
 
 // Mock do PrismaService
 const mockPrismaService = {
@@ -62,6 +62,11 @@ describe('UsersService', () => {
         role: Role.USER,
         createdAt: new Date(),
         updatedAt: new Date(),
+        emailVerified: true,
+        emailVerificationToken: null,
+        emailVerificationTokenExpires: null,
+        passwordResetToken: null,
+        passwordResetTokenExpires: null,
       };
       prisma.user.findUnique.mockResolvedValue(expectedUser);
 
@@ -104,6 +109,11 @@ describe('UsersService', () => {
         role: Role.USER,
         createdAt: new Date(),
         updatedAt: new Date(),
+        emailVerified: true,
+        emailVerificationToken: null,
+        emailVerificationTokenExpires: null,
+        passwordResetToken: null,
+        passwordResetTokenExpires: null,
       };
       prisma.user.findUnique.mockResolvedValue(expectedUser);
 
@@ -131,6 +141,11 @@ describe('UsersService', () => {
         role: Role.USER,
         createdAt: new Date(),
         updatedAt: new Date(),
+        emailVerified: true,
+        emailVerificationToken: null,
+        emailVerificationTokenExpires: null,
+        passwordResetToken: null,
+        passwordResetTokenExpires: null,
       };
       prisma.user.findUnique.mockResolvedValue(expectedUser);
 
@@ -155,12 +170,18 @@ describe('UsersService', () => {
         password: 'plainPassword',
       };
       const expectedCreatedUser: User = {
-        id: 'new-id',
-        ...inputData,
-        password: 'hashedPassword', // Espera a senha hasheada
-        role: Role.USER, // Role padrão definida no schema
+        id: 'new-user-id',
+        email: 'newuser@example.com',
+        username: 'newuser',
+        password: 'hashedPassword',
+        role: Role.USER,
         createdAt: new Date(),
         updatedAt: new Date(),
+        emailVerified: false,
+        emailVerificationToken: null,
+        emailVerificationTokenExpires: null,
+        passwordResetToken: null,
+        passwordResetTokenExpires: null,
       };
       prisma.user.create.mockResolvedValue(expectedCreatedUser);
       const bcryptHashMock = bcrypt.hash as jest.Mock;

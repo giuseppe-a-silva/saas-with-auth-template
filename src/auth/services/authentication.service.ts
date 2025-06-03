@@ -11,7 +11,9 @@ import { PrismaService } from '../../database/prisma.service';
 import { UsersService } from '../../users/users.service';
 import { LoginDto } from '../dto/login.dto';
 import { RegisterDto } from '../dto/register.dto';
+import { EmailVerificationService } from './email-verification.service';
 import { PasswordService } from './password.service';
+import { SecurityNotificationService } from './security-notification.service';
 import { TokenService } from './token.service';
 
 /**
@@ -26,6 +28,8 @@ export class AuthenticationService {
     private readonly usersService: UsersService,
     private readonly passwordService: PasswordService,
     private readonly tokenService: TokenService,
+    private readonly emailVerificationService: EmailVerificationService,
+    private readonly securityNotificationService: SecurityNotificationService,
     private readonly prisma: PrismaService,
   ) {}
 
@@ -52,6 +56,16 @@ export class AuthenticationService {
         return null;
       }
 
+      // Verifica se o email foi verificado
+      if (!user.emailVerified) {
+        this.logger.warn(
+          `Tentativa de login com email não verificado: ${identifier}`,
+        );
+        throw new UnauthorizedException(
+          'Email não verificado. Verifique sua caixa de entrada.',
+        );
+      }
+
       // Verifica se a senha está correta usando o PasswordService
       const isPasswordValid = await this.passwordService.comparePassword(
         password,
@@ -69,14 +83,16 @@ export class AuthenticationService {
       this.logger.log(`Usuário ${identifier} validado com sucesso`);
       return userWithoutPassword;
     } catch (error) {
+      if (error instanceof UnauthorizedException) {
+        throw error;
+      }
       this.logger.error(`Erro ao validar usuário ${identifier}:`, error);
       throw error;
     }
   }
 
   /**
-   * Realiza o login do usuário e retorna o access token
-   * Define o refresh token em um cookie HttpOnly seguro
+   * Realiza login de um usuário validado
    * @param loginDto - Dados de login (identifier + password)
    * @param response - Objeto Response do Express para definir cookies
    * @returns Objeto contendo o access token
@@ -87,38 +103,69 @@ export class AuthenticationService {
     response: Response,
   ): Promise<{ accessToken: string }> {
     try {
-      const user = await this.validateUser(
+      // Valida as credenciais do usuário
+      const validatedUser = await this.validateUser(
         loginDto.identifier,
         loginDto.password,
       );
 
-      if (!user) {
+      if (!validatedUser) {
         throw new UnauthorizedException('Credenciais inválidas.');
       }
 
-      // Gera os tokens usando o TokenService
-      const tokens = await this.tokenService.generateTokens(user);
+      // Verifica se o email foi verificado
+      if (!validatedUser.emailVerified) {
+        throw new UnauthorizedException(
+          'Por favor, verifique seu email antes de fazer login.',
+        );
+      }
 
-      // Define o refresh token em um cookie HttpOnly
+      // Gera os tokens JWT (access + refresh)
+      const tokens = await this.tokenService.generateTokens(validatedUser);
+
+      // Define o refresh token como um cookie HttpOnly seguro
       this.tokenService.setRefreshTokenCookie(response, tokens.refreshToken);
 
+      // Envia notificação de login
+      try {
+        await this.securityNotificationService.sendLoginNotification(
+          {
+            id: validatedUser.id,
+            username: validatedUser.username,
+            email: validatedUser.email,
+          },
+          {
+            // TODO: Extrair IP e device do contexto da requisição
+            ipAddress: 'Não disponível',
+            device: 'Navegador',
+            location: 'Não disponível',
+          },
+        );
+      } catch (notificationError) {
+        // Log do erro mas não falha a operação principal
+        this.logger.warn(
+          `Falha ao enviar notificação de login para ${validatedUser.email}:`,
+          notificationError,
+        );
+      }
+
       this.logger.log(
-        `Login realizado com sucesso para usuário: ${user.email}`,
+        `Login bem-sucedido para usuário: ${validatedUser.email}`,
       );
 
-      // Retorna apenas o access token no corpo da resposta
+      // Retorna apenas o access token (refresh token fica no cookie)
       return { accessToken: tokens.accessToken };
     } catch (error) {
       if (error instanceof UnauthorizedException) {
         throw error;
       }
-      this.logger.error('Erro durante login:', error);
-      throw new InternalServerErrorException('Erro interno durante login');
+      this.logger.error(`Erro no login para ${loginDto.identifier}:`, error);
+      throw new InternalServerErrorException('Erro interno no login.');
     }
   }
 
   /**
-   * Registra um novo usuário no sistema
+   * Registra um novo usuário no sistema com verificação obrigatória de email
    * @param registerDto - Dados para criação do usuário
    * @returns Dados do usuário criado (sem a senha)
    * @throws {ConflictException} Se email ou username já existirem
@@ -126,12 +173,27 @@ export class AuthenticationService {
    */
   async register(registerDto: RegisterDto): Promise<Omit<User, 'password'>> {
     try {
-      // Cria o usuário usando o UsersService
+      // Cria o usuário com emailVerified=false
       const newUser = await this.usersService.createUser({
         email: registerDto.email,
         username: registerDto.username,
         password: registerDto.password,
       });
+
+      // Envia email de verificação
+      const emailSent =
+        await this.emailVerificationService.sendVerificationEmail(
+          newUser.id,
+          newUser.email,
+          newUser.username,
+        );
+
+      if (!emailSent) {
+        this.logger.warn(
+          `Falha ao enviar email de verificação para: ${newUser.email}`,
+        );
+        // Não falha o registro, apenas loga o aviso
+      }
 
       // Remove a senha do objeto retornado
       const { password: _, ...userWithoutPassword } = newUser;
@@ -275,6 +337,28 @@ export class AuthenticationService {
         where: { id: userId },
         data: { password: hashedNewPassword },
       });
+
+      // Envia notificação de segurança sobre alteração de senha
+      try {
+        await this.securityNotificationService.sendPasswordChangedNotification(
+          {
+            id: user.id,
+            username: user.username,
+            email: user.email,
+          },
+          {
+            // TODO: Extrair IP e device do contexto da requisição
+            ipAddress: 'Não disponível',
+            device: 'Navegador',
+          },
+        );
+      } catch (notificationError) {
+        // Log do erro mas não falha a operação principal
+        this.logger.warn(
+          `Falha ao enviar notificação de alteração de senha para ${user.email}:`,
+          notificationError,
+        );
+      }
 
       this.logger.log(`Senha alterada com sucesso para usuário: ${user.email}`);
       return true;
