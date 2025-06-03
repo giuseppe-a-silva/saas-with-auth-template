@@ -1,0 +1,34 @@
+export declare const ERROR_MESSAGES: {
+    readonly INVALID_CREDENTIALS: "Credenciais inválidas. Verifique email/usuário e senha.";
+    readonly USER_NOT_FOUND: "Usuário não encontrado.";
+    readonly UNAUTHORIZED: "Acesso não autorizado.";
+    readonly TOKEN_EXPIRED: "Token expirado. Faça login novamente.";
+    readonly INVALID_TOKEN: "Token inválido.";
+    readonly FORBIDDEN: "Você não tem permissão para realizar esta ação.";
+    readonly INSUFFICIENT_PERMISSIONS: "Permissões insuficientes para acessar este recurso.";
+    readonly REQUIRED_FIELD: "Este campo é obrigatório.";
+    readonly INVALID_EMAIL: "Formato de email inválido.";
+    readonly INVALID_PASSWORD: "Senha deve ter no mínimo 8 caracteres.";
+    readonly PASSWORD_TOO_SHORT: "A senha deve ter no mínimo 8 caracteres.";
+    readonly EMAIL_ALREADY_EXISTS: "Este email já está em uso.";
+    readonly USERNAME_ALREADY_EXISTS: "Este nome de usuário já está em uso.";
+    readonly USER_ALREADY_EXISTS: "Usuário já existe com estes dados.";
+    readonly INTERNAL_ERROR: "Erro interno do servidor. Tente novamente mais tarde.";
+    readonly DATABASE_ERROR: "Erro de conexão com o banco de dados.";
+    readonly CONFIGURATION_ERROR: "Erro de configuração do sistema.";
+    readonly UNSUPPORTED_CONTEXT: "Contexto de requisição não suportado.";
+    readonly USER_NOT_IN_CONTEXT: "Usuário autenticado não encontrado no contexto.";
+    readonly PERMISSION_CHECK_ERROR: "Erro ao verificar permissões.";
+    readonly PERMISSION_NOT_FOUND: "Permissão não encontrada.";
+    readonly INVALID_PERMISSION_CONDITION: "Condição de permissão inválida.";
+};
+export declare const SUCCESS_MESSAGES: {
+    readonly USER_CREATED: "Usuário criado com sucesso.";
+    readonly USER_UPDATED: "Usuário atualizado com sucesso.";
+    readonly USER_DELETED: "Usuário removido com sucesso.";
+    readonly LOGIN_SUCCESS: "Login realizado com sucesso.";
+    readonly LOGOUT_SUCCESS: "Logout realizado com sucesso.";
+    readonly TOKEN_REFRESHED: "Token renovado com sucesso.";
+    readonly PERMISSION_GRANTED: "Permissão concedida.";
+    readonly PERMISSION_CREATED: "Permissão criada com sucesso.";
+};

@@ -1,0 +1,139 @@
+// This is your Prisma schema file,
+// learn more about it in the docs: https://pris.ly/d/prisma-schema
+
+// Looking for ways to speed up your queries, or scale easily with your serverless or edge functions?
+// Try Prisma Accelerate: https://pris.ly/cli/accelerate-init
+
+generator client {
+  provider = "prisma-client-js"
+}
+
+datasource db {
+  provider = "postgresql"
+  url      = env("DATABASE_URL")
+}
+
+model User {
+  id        String   @id @default(uuid())
+  email     String   @unique
+  username  String   @unique
+  password  String
+  role      Role     @default(USER)
+  createdAt DateTime @default(now())
+  updatedAt DateTime @updatedAt
+  permissions Permission[]
+  auditLogs AuditLog[]
+  notificationTemplates NotificationTemplate[] // templates criados pelo usuário
+}
+
+enum Role {
+  ADMIN
+  EDITOR
+  USER
+}
+
+model Permission {
+  id        String   @id @default(uuid())
+  userId    String
+  action    String    // e.g., 'create', 'read', 'update', 'delete', 'manage'
+  subject   String    // e.g., 'User', 'Post', 'all'
+  condition String?  // JSON string for conditions, e.g., '{"authorId": "${user.id}"}'
+  inverted  Boolean  @default(false) // Whether the permission is inverted (cannot)
+  reason    String?  // Optional reason for the permission rule
+  user      User     @relation(fields: [userId], references: [id], onDelete: Cascade)
+
+  @@unique([userId, action, subject, condition, inverted]) // Ensure unique permissions per user
+}
+
+model AuditLog {
+  id            String            @id @default(uuid())
+  userId        String?           // Nullable para logs sem usuário autenticado
+  action        AuditActionType
+  resource      String?           // Recurso afetado (ex: 'User', 'Permission')
+  resourceId    String?           // ID do recurso afetado
+  ipAddress     String?
+  userAgent     String?
+  endpoint      String?           // Endpoint acessado
+  method        String?           // HTTP method (GET, POST, etc.)
+  statusCode    Int?              // Status code da resposta
+  requestData   Json?             // Dados da requisição (sanitizados)
+  responseData  Json?             // Dados da resposta (sanitizados)
+  metadata      Json?             // Metadados adicionais
+  createdAt     DateTime          @default(now())
+  expiresAt     DateTime?         // Data de expiração baseada na política de retenção
+  
+  // Relacionamento opcional com usuário
+  user          User?             @relation(fields: [userId], references: [id], onDelete: SetNull)
+  
+  // Índices para performance
+  @@index([userId])
+  @@index([action])
+  @@index([createdAt])
+  @@index([expiresAt])
+  @@index([ipAddress])
+}
+
+enum AuditActionType {
+  LOGIN
+  LOGOUT
+  LOGIN_FAILED
+  PASSWORD_CHANGE
+  DATA_UPDATE
+  ACCESS_DENIED
+  PERMISSION_CHECK
+  TOKEN_REFRESH
+  ACCOUNT_LOCKED
+  NOTIFICATION_SENT
+  NOTIFICATION_FAILED
+  TEMPLATE_CREATED
+  TEMPLATE_UPDATED
+  TEMPLATE_DELETED
+}
+
+// Modelo para templates de notificação
+model NotificationTemplate {
+  id          String                    @id @default(uuid())
+  name        String                    @unique // identificador único do template
+  title       String                    // título da notificação (assunto do email, título do push)
+  content     String                    // conteúdo da mensagem com sintaxe LiquidJS
+  category    NotificationCategory      // categoria/domínio da notificação
+  channel     NotificationChannel       // canal de envio da notificação
+  isActive    Boolean                   @default(true) // se o template está ativo
+  createdBy   String?                   // ID do usuário que criou (nullable para templates de sistema)
+  createdAt   DateTime                  @default(now())
+  updatedAt   DateTime                  @updatedAt
+  
+  // Relacionamento opcional com usuário criador
+  creator     User?                     @relation(fields: [createdBy], references: [id], onDelete: SetNull)
+  
+  // Índices para performance
+  @@index([name])
+  @@index([category])
+  @@index([channel])
+  @@index([isActive])
+}
+
+// Enums para o módulo de notificações
+enum NotificationCategory {
+  SISTEMA
+  AUTH
+  LEADS
+  MARKETING
+  ADMIN
+}
+
+enum NotificationChannel {
+  EMAIL
+  PUSH
+  REALTIME
+  THIRD_PARTY
+}
+
+enum NotificationStatus {
+  PENDING
+  PROCESSING
+  SENT
+  FAILED
+  RETRYING
+}
+
