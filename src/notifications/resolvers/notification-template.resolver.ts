@@ -1,177 +1,402 @@
+import {
+  BadRequestException,
+  Logger,
+  NotFoundException,
+  UseGuards,
+} from '@nestjs/common';
 import { Args, Mutation, Query, Resolver } from '@nestjs/graphql';
-import { AuditActionType } from '@prisma/client';
-import { Audit } from '../../common/interceptors/audit.interceptor';
-import { CreateTemplateDto } from '../dto/create-template.dto';
-import { NotificationTemplate } from '../entities/notification-template.entity';
-import { NotificationChannel } from '../interfaces/notification-dispatcher.interface';
-import { NotificationTemplateService } from '../services/notification-template.service';
-import { TemplateRendererService } from '../services/template-renderer.service';
-import { NotificationCategory } from '../types/notification.types';
+import { NotificationChannel } from '@prisma/client';
+import { JwtAuthGuard } from '../../auth/guards/jwt-auth.guard';
+import { CurrentUser } from '../../common/decorators/current-user.decorator';
+import { User } from '../../users/entities/user.entity';
+import { CreateEventTemplateDto } from '../dto/create-event-template.dto';
+import { TemplateFiltersDto } from '../dto/template-filters.dto';
+import { UpdateTemplateDto } from '../dto/update-template.dto';
+import { EventNotificationTemplate } from '../entities/event-notification-template.entity';
+import { TemplateManagerService } from '../services/template-manager.service';
 
 /**
- * Interface básica para usuário (mock até auth module estar disponível)
+ * Resolver GraphQL para gerenciamento de templates de notificação
+ * Fornece operações CRUD para templates baseados em eventos
  */
-interface User {
-  id: string;
-  email: string;
-}
-
-/**
- * Mock decorator para CurrentUser até auth module estar disponível
- */
-function CurrentUser(): (
-  target: unknown,
-  propertyKey: string | symbol,
-  parameterIndex: number,
-) => void {
-  return () => {
-    // Mock implementation
-  };
-}
-
-/**
- * Resolver GraphQL para templates de notificação
- * Expõe operações CRUD e funcionalidades relacionadas
- */
-@Resolver(() => NotificationTemplate)
+@Resolver(() => EventNotificationTemplate)
+@UseGuards(JwtAuthGuard)
 export class NotificationTemplateResolver {
+  private readonly logger = new Logger(NotificationTemplateResolver.name);
+
   constructor(
-    private readonly templateService: NotificationTemplateService,
-    private readonly rendererService: TemplateRendererService,
+    private readonly templateManagerService: TemplateManagerService,
   ) {}
 
   /**
    * Cria um novo template de notificação
-   * @param createTemplateDto Dados do template
-   * @param user Usuário autenticado
+   * @param createTemplateDto Dados do template a ser criado
+   * @param currentUser Usuário autenticado
    * @returns Template criado
    */
-  @Audit(AuditActionType.TEMPLATE_CREATED, {
-    includeRequestBody: true,
-  })
-  @Mutation(() => NotificationTemplate, {
+  @Mutation(() => EventNotificationTemplate, {
     description: 'Cria um novo template de notificação',
   })
   async createNotificationTemplate(
-    @Args('input') createTemplateDto: CreateTemplateDto,
-    @CurrentUser()
-    user: User = { id: 'system-user', email: 'system@example.com' },
-  ): Promise<NotificationTemplate> {
-    const templateData = {
-      name: createTemplateDto.name,
-      title: createTemplateDto.title,
-      content: createTemplateDto.content,
-      category: createTemplateDto.category,
+    @Args('input') createTemplateDto: CreateEventTemplateDto,
+    @CurrentUser() currentUser: User,
+  ): Promise<EventNotificationTemplate> {
+    this.logger.log('Criando template de notificação', {
+      eventKey: createTemplateDto.eventKey,
       channel: createTemplateDto.channel,
-      isActive: createTemplateDto.isActive,
-    };
+      userId: currentUser.id,
+    });
 
-    const template = await this.templateService.createTemplate(
-      templateData,
-      user.id,
-    );
-    return template as NotificationTemplate;
+    try {
+      // Verifica se já existe template para esta combinação eventKey + channel
+      const existingTemplate = await this.templateManagerService.findTemplate(
+        createTemplateDto.eventKey,
+        createTemplateDto.channel,
+      );
+
+      if (existingTemplate) {
+        throw new BadRequestException(
+          `Já existe um template para o evento '${createTemplateDto.eventKey}' no canal '${createTemplateDto.channel}'`,
+        );
+      }
+
+      const template = await this.templateManagerService.createTemplate({
+        eventKey: createTemplateDto.eventKey,
+        channel: createTemplateDto.channel,
+        title: createTemplateDto.title,
+        content: createTemplateDto.content,
+        isActive: createTemplateDto.isActive ?? true,
+        createdBy: currentUser.id,
+      });
+
+      this.logger.log('Template criado com sucesso', {
+        templateId: template.id,
+        eventKey: template.eventKey,
+        channel: template.channel,
+      });
+
+      return template as EventNotificationTemplate;
+    } catch (error) {
+      this.logger.error('Erro ao criar template', {
+        eventKey: createTemplateDto.eventKey,
+        channel: createTemplateDto.channel,
+        error: error instanceof Error ? error.message : 'Erro desconhecido',
+      });
+      throw error;
+    }
   }
 
   /**
-   * Lista todos os templates com filtros opcionais
-   * @param category Filtro por categoria
-   * @param channel Filtro por canal
-   * @param isActive Filtro por status ativo
-   * @param search Busca por nome ou título
-   * @returns Lista de templates
+   * Busca templates com filtros opcionais
+   * @param filters Filtros para busca
+   * @returns Lista de templates encontrados
    */
-  @Query(() => [NotificationTemplate], {
-    description: 'Lista templates de notificação com filtros opcionais',
+  @Query(() => [EventNotificationTemplate], {
+    description: 'Busca templates de notificação com filtros opcionais',
   })
   async notificationTemplates(
-    @Args('category', { nullable: true }) category?: NotificationCategory,
-    @Args('channel', { nullable: true }) channel?: NotificationChannel,
-    @Args('isActive', { nullable: true }) isActive?: boolean,
-    @Args('search', { nullable: true }) search?: string,
-  ): Promise<NotificationTemplate[]> {
-    const templates = await this.templateService.listTemplates({
-      category,
-      channel,
-      isActive,
-      search,
-    });
-    return templates as NotificationTemplate[];
+    @Args('filters', { nullable: true }) filters?: TemplateFiltersDto,
+  ): Promise<EventNotificationTemplate[]> {
+    this.logger.log('Buscando templates', { filters });
+
+    try {
+      const templates = await this.templateManagerService.findTemplates(
+        filters ?? {},
+      );
+
+      this.logger.log('Templates encontrados', {
+        count: templates.length,
+        filters,
+      });
+
+      return templates as EventNotificationTemplate[];
+    } catch (error) {
+      this.logger.error('Erro ao buscar templates', {
+        filters,
+        error: error instanceof Error ? error.message : 'Erro desconhecido',
+      });
+      throw error;
+    }
   }
 
   /**
-   * Busca um template específico pelo nome
-   * @param name Nome do template
+   * Busca um template específico por eventKey e channel
+   * @param eventKey Chave do evento
+   * @param channel Canal de notificação
    * @returns Template encontrado
    */
-  @Query(() => NotificationTemplate, {
-    description: 'Busca template por nome',
+  @Query(() => EventNotificationTemplate, {
+    nullable: true,
+    description: 'Busca um template específico por eventKey e channel',
   })
-  async notificationTemplateByName(
-    @Args('name') name: string,
-  ): Promise<NotificationTemplate> {
-    const template = await this.templateService.findTemplateByName(name);
-    return template as NotificationTemplate;
-  }
+  async notificationTemplate(
+    @Args('eventKey') eventKey: string,
+    @Args('channel') channel: NotificationChannel,
+  ): Promise<EventNotificationTemplate | null> {
+    this.logger.log('Buscando template específico', { eventKey, channel });
 
-  /**
-   * Cria preview de um template com dados de exemplo
-   * @param templateName Nome do template
-   * @param sampleData Dados de exemplo em JSON
-   * @returns Conteúdo renderizado
-   */
-  @Query(() => String, {
-    description: 'Gera preview de template com dados de exemplo',
-  })
-  async previewNotificationTemplate(
-    @Args('templateName') templateName: string,
-    @Args('sampleData', { nullable: true }) sampleData?: string,
-  ): Promise<string> {
-    const template =
-      await this.templateService.findTemplateByName(templateName);
+    try {
+      const template = await this.templateManagerService.findTemplate(
+        eventKey,
+        channel,
+      );
 
-    let parsedSampleData: Record<string, unknown> | undefined;
-
-    if (sampleData) {
-      try {
-        const parsed: unknown = JSON.parse(sampleData);
-        parsedSampleData =
-          typeof parsed === 'object' && parsed !== null
-            ? (parsed as Record<string, unknown>)
-            : undefined;
-      } catch (_error) {
-        throw new Error('sampleData deve ser um JSON válido');
+      if (template) {
+        this.logger.log('Template encontrado', {
+          templateId: template.id,
+          eventKey,
+          channel,
+        });
+      } else {
+        this.logger.log('Template não encontrado', { eventKey, channel });
       }
+
+      return template as EventNotificationTemplate | null;
+    } catch (error) {
+      this.logger.error('Erro ao buscar template', {
+        eventKey,
+        channel,
+        error: error instanceof Error ? error.message : 'Erro desconhecido',
+      });
+      throw error;
     }
-
-    return await this.rendererService.createTemplatePreview(
-      template.content,
-      parsedSampleData,
-    );
   }
 
   /**
-   * Valida sintaxe de um template
-   * @param content Conteúdo do template
-   * @returns true se válido
+   * Busca todos os templates de um evento específico
+   * @param eventKey Chave do evento
+   * @returns Lista de templates do evento
    */
-  @Query(() => Boolean, {
-    description: 'Valida sintaxe LiquidJS de um template',
+  @Query(() => [EventNotificationTemplate], {
+    description: 'Busca todos os templates de um evento específico',
   })
-  validateTemplateContent(@Args('content') content: string): boolean {
-    const validationResult = this.rendererService.validateTemplate(content);
-    return validationResult.isValid;
+  async notificationTemplatesByEvent(
+    @Args('eventKey') eventKey: string,
+  ): Promise<EventNotificationTemplate[]> {
+    this.logger.log('Buscando templates por evento', { eventKey });
+
+    try {
+      const templates =
+        await this.templateManagerService.findTemplatesByEventKey(eventKey);
+
+      this.logger.log('Templates encontrados por evento', {
+        eventKey,
+        count: templates.length,
+      });
+
+      return templates as EventNotificationTemplate[];
+    } catch (error) {
+      this.logger.error('Erro ao buscar templates por evento', {
+        eventKey,
+        error: error instanceof Error ? error.message : 'Erro desconhecido',
+      });
+      throw error;
+    }
   }
 
   /**
-   * Extrai variáveis utilizadas em um template
-   * @param content Conteúdo do template
-   * @returns Array com nomes das variáveis
+   * Atualiza um template existente
+   * @param eventKey Chave do evento
+   * @param channel Canal de notificação
+   * @param updateTemplateDto Dados para atualização
+   * @param currentUser Usuário autenticado
+   * @returns Template atualizado
+   */
+  @Mutation(() => EventNotificationTemplate, {
+    description: 'Atualiza um template de notificação existente',
+  })
+  async updateNotificationTemplate(
+    @Args('eventKey') eventKey: string,
+    @Args('channel') channel: NotificationChannel,
+    @Args('input') updateTemplateDto: UpdateTemplateDto,
+    @CurrentUser() currentUser: User,
+  ): Promise<EventNotificationTemplate> {
+    this.logger.log('Atualizando template', {
+      eventKey,
+      channel,
+      userId: currentUser.id,
+      updates: Object.keys(updateTemplateDto),
+    });
+
+    try {
+      // Verifica se o template existe
+      const existingTemplate = await this.templateManagerService.findTemplate(
+        eventKey,
+        channel,
+      );
+
+      if (!existingTemplate) {
+        throw new NotFoundException(
+          `Template não encontrado para evento '${eventKey}' no canal '${channel}'`,
+        );
+      }
+
+      const updatedTemplate = await this.templateManagerService.updateTemplate(
+        eventKey,
+        channel,
+        updateTemplateDto,
+      );
+
+      this.logger.log('Template atualizado com sucesso', {
+        templateId: updatedTemplate.id,
+        eventKey,
+        channel,
+      });
+
+      return updatedTemplate as EventNotificationTemplate;
+    } catch (error) {
+      this.logger.error('Erro ao atualizar template', {
+        eventKey,
+        channel,
+        error: error instanceof Error ? error.message : 'Erro desconhecido',
+      });
+      throw error;
+    }
+  }
+
+  /**
+   * Remove um template específico
+   * @param eventKey Chave do evento
+   * @param channel Canal de notificação
+   * @param currentUser Usuário autenticado
+   * @returns Sucesso da operação
+   */
+  @Mutation(() => Boolean, {
+    description: 'Remove um template de notificação específico',
+  })
+  async deleteNotificationTemplate(
+    @Args('eventKey') eventKey: string,
+    @Args('channel') channel: NotificationChannel,
+    @CurrentUser() currentUser: User,
+  ): Promise<boolean> {
+    this.logger.log('Removendo template', {
+      eventKey,
+      channel,
+      userId: currentUser.id,
+    });
+
+    try {
+      // Verifica se o template existe
+      const existingTemplate = await this.templateManagerService.findTemplate(
+        eventKey,
+        channel,
+      );
+
+      if (!existingTemplate) {
+        throw new NotFoundException(
+          `Template não encontrado para evento '${eventKey}' no canal '${channel}'`,
+        );
+      }
+
+      const success = await this.templateManagerService.deleteTemplate(
+        eventKey,
+        channel,
+      );
+
+      this.logger.log('Template removido', {
+        eventKey,
+        channel,
+        success,
+      });
+
+      return success;
+    } catch (error) {
+      this.logger.error('Erro ao remover template', {
+        eventKey,
+        channel,
+        error: error instanceof Error ? error.message : 'Erro desconhecido',
+      });
+      throw error;
+    }
+  }
+
+  /**
+   * Alterna o status ativo de um template
+   * @param eventKey Chave do evento
+   * @param channel Canal de notificação
+   * @param isActive Novo status ativo
+   * @param currentUser Usuário autenticado
+   * @returns Template atualizado
+   */
+  @Mutation(() => EventNotificationTemplate, {
+    description: 'Alterna o status ativo de um template',
+  })
+  async toggleNotificationTemplateStatus(
+    @Args('eventKey') eventKey: string,
+    @Args('channel') channel: NotificationChannel,
+    @Args('isActive') isActive: boolean,
+    @CurrentUser() currentUser: User,
+  ): Promise<EventNotificationTemplate> {
+    this.logger.log('Alternando status do template', {
+      eventKey,
+      channel,
+      isActive,
+      userId: currentUser.id,
+    });
+
+    try {
+      // Verifica se o template existe
+      const existingTemplate = await this.templateManagerService.findTemplate(
+        eventKey,
+        channel,
+      );
+
+      if (!existingTemplate) {
+        throw new NotFoundException(
+          `Template não encontrado para evento '${eventKey}' no canal '${channel}'`,
+        );
+      }
+
+      const updatedTemplate =
+        await this.templateManagerService.toggleTemplateStatus(
+          eventKey,
+          channel,
+          isActive,
+        );
+
+      this.logger.log('Status do template alterado', {
+        templateId: updatedTemplate.id,
+        eventKey,
+        channel,
+        isActive,
+      });
+
+      return updatedTemplate as EventNotificationTemplate;
+    } catch (error) {
+      this.logger.error('Erro ao alterar status do template', {
+        eventKey,
+        channel,
+        isActive,
+        error: error instanceof Error ? error.message : 'Erro desconhecido',
+      });
+      throw error;
+    }
+  }
+
+  /**
+   * Lista todas as chaves de eventos que possuem templates
+   * @returns Lista de chaves de eventos
    */
   @Query(() => [String], {
-    description: 'Extrai variáveis de um template',
+    description: 'Lista todas as chaves de eventos que possuem templates',
   })
-  extractTemplateVariables(@Args('content') content: string): string[] {
-    return this.rendererService.extractTemplateVariables(content);
+  async eventKeysWithTemplates(): Promise<string[]> {
+    this.logger.log('Buscando chaves de eventos com templates');
+
+    try {
+      const eventKeys =
+        await this.templateManagerService.getEventKeysWithTemplates();
+
+      this.logger.log('Chaves de eventos encontradas', {
+        count: eventKeys.length,
+      });
+
+      return eventKeys;
+    } catch (error) {
+      this.logger.error('Erro ao buscar chaves de eventos', {
+        error: error instanceof Error ? error.message : 'Erro desconhecido',
+      });
+      throw error;
+    }
   }
 }

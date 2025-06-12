@@ -8,40 +8,28 @@ type AuthPayload {
   accessToken: String!
 }
 
-"""Status de saúde de um canal de notificação"""
-type ChannelHealthStatus {
-  """Nome do canal de notificação"""
-  channel: String!
+"""Dados para alteração de senha"""
+input ChangePasswordDto {
+  """Senha atual do usuário"""
+  currentPassword: String!
 
-  """Indica se o canal está configurado"""
-  isConfigured: Boolean!
-
-  """Indica se o canal está funcionando corretamente"""
-  isHealthy: Boolean!
-
-  """Provedor do canal (ex: SendGrid, Twilio)"""
-  provider: String!
-
-  """Timeout configurado para o canal em milissegundos"""
-  timeout: Float
+  """Nova senha do usuário"""
+  newPassword: String!
 }
 
-"""Dados para criação de template de notificação"""
-input CreateTemplateDto {
-  """Categoria da notificação"""
-  category: NotificationCategory!
-
+"""Dados para criação de template de evento"""
+input CreateEventTemplateDto {
   """Canal de envio da notificação"""
   channel: NotificationChannel!
 
   """Conteúdo do template com sintaxe LiquidJS"""
   content: String!
 
+  """Chave do evento"""
+  eventKey: String!
+
   """Se o template está ativo"""
   isActive: Boolean = true
-
-  """Nome único do template"""
-  name: String!
 
   """Título da notificação"""
   title: String!
@@ -52,6 +40,42 @@ A date-time string at UTC, such as 2019-12-03T09:54:33Z, compliant with the date
 """
 scalar DateTime
 
+"""Template de notificação baseado em evento"""
+type EventNotificationTemplate {
+  """Canal de envio da notificação"""
+  channel: NotificationChannel!
+
+  """Conteúdo do template com sintaxe LiquidJS"""
+  content: String!
+
+  """Data e hora de criação do template"""
+  createdAt: DateTime!
+
+  """ID do usuário que criou o template"""
+  createdBy: ID
+
+  """Chave do evento"""
+  eventKey: String!
+
+  """ID único do template"""
+  id: ID!
+
+  """Se o template está ativo"""
+  isActive: Boolean!
+
+  """Título da notificação"""
+  title: String!
+
+  """Data e hora da última atualização"""
+  updatedAt: DateTime!
+}
+
+"""Dados para solicitação de recuperação de senha"""
+input ForgotPasswordDto {
+  """Email do usuário para recuperação de senha"""
+  email: String!
+}
+
 input LoginDto {
   """Identificador do usuário (email ou nome de usuário)"""
   identifier: String!
@@ -61,11 +85,20 @@ input LoginDto {
 }
 
 type Mutation {
+  """Altera a senha de um usuário autenticado"""
+  changePassword(changePasswordInput: ChangePasswordDto!): SimpleStatusPayload!
+
   """Cria um novo template de notificação"""
-  createNotificationTemplate(input: CreateTemplateDto!): NotificationTemplate!
+  createNotificationTemplate(input: CreateEventTemplateDto!): EventNotificationTemplate!
+
+  """Remove um template de notificação específico"""
+  deleteNotificationTemplate(channel: String!, eventKey: String!): Boolean!
 
   """Deleta um usuário do sistema (requer permissão)."""
   deleteUser(id: ID!): User!
+
+  """Inicia processo de recuperação de senha"""
+  forgotPassword(forgotPasswordInput: ForgotPasswordDto!): SimpleStatusPayload!
 
   """Autentica usuário e retorna tokens de acesso"""
   login(loginInput: LoginDto!): AuthPayload!
@@ -79,20 +112,26 @@ type Mutation {
   """Registra novo usuário no sistema"""
   register(registerInput: RegisterDto!): User!
 
-  """Envia uma notificação usando um template específico"""
-  sendNotification(input: SendNotificationDto!): NotificationResult!
+  """Reenvia email de verificação para um usuário"""
+  resendVerificationEmail(resendVerificationEmailInput: ResendVerificationEmailDto!): SimpleStatusPayload!
+
+  """Redefine a senha usando token de recuperação"""
+  resetPassword(resetPasswordInput: ResetPasswordDto!): SimpleStatusPayload!
+
+  """Alterna o status ativo de um template"""
+  toggleNotificationTemplateStatus(channel: String!, eventKey: String!, isActive: Boolean!): EventNotificationTemplate!
 
   """Atualiza o perfil do usuário autenticado."""
   updateMyProfile(updateUserInput: UpdateUserDto!): User!
-}
 
-"""Categorias de notificação disponíveis no sistema"""
-enum NotificationCategory {
-  ADMIN
-  AUTH
-  LEADS
-  MARKETING
-  SISTEMA
+  """Atualiza um template de notificação existente"""
+  updateNotificationTemplate(channel: String!, eventKey: String!, input: UpdateTemplateDto!): EventNotificationTemplate!
+
+  """Valida um template sem salvá-lo (endpoint público)"""
+  validateNotificationTemplate(input: ValidateTemplateDto!): TemplateValidationResponse!
+
+  """Verifica o email do usuário usando token de verificação"""
+  verifyEmail(verifyEmailInput: VerifyEmailDto!): SimpleStatusPayload!
 }
 
 """Canais de envio de notificação disponíveis"""
@@ -100,102 +139,26 @@ enum NotificationChannel {
   EMAIL
   PUSH
   REALTIME
-  THIRD_PARTY
-}
-
-"""Resultado do envio de uma notificação"""
-type NotificationResult {
-  """Mensagem de erro caso tenha ocorrido algum problema"""
-  error: String
-
-  """ID externo fornecido pelo provedor de notificação"""
-  externalId: String
-
-  """Metadados adicionais do envio em formato JSON"""
-  metadata: String
-
-  """Data e hora em que a notificação foi enviada"""
-  sentAt: DateTime
-
-  """Status do envio da notificação"""
-  status: String!
-}
-
-"""Template de notificação do sistema"""
-type NotificationTemplate {
-  """Categoria da notificação"""
-  category: NotificationCategory!
-
-  """Canal de envio da notificação"""
-  channel: NotificationChannel!
-
-  """Conteúdo do template com sintaxe LiquidJS"""
-  content: String!
-
-  """Data e hora de criação do template"""
-  createdAt: DateTime!
-
-  """ID do usuário que criou o template"""
-  createdBy: ID
-
-  """ID único do template"""
-  id: ID!
-
-  """Se o template está ativo"""
-  isActive: Boolean!
-
-  """Nome único do template"""
-  name: String!
-
-  """Título da notificação"""
-  title: String!
-
-  """Data e hora da última atualização"""
-  updatedAt: DateTime!
 }
 
 type Query {
-  """Extrai variáveis de um template"""
-  extractTemplateVariables(content: String!): [String!]!
+  """Lista todas as chaves de eventos que possuem templates"""
+  eventKeysWithTemplates: [String!]!
 
   """Busca um usuário pelo seu ID."""
   findUserById(id: ID!): User
 
-  """Verifica o status de saúde dos canais de notificação configurados"""
-  getChannelsHealthStatus: [ChannelHealthStatus!]!
-
-  """Obtém estatísticas do sistema de retry de notificações"""
-  getRetryStatistics: RetryStatistics!
-
   """Retorna os dados do usuário autenticado atualmente."""
   me: User!
 
-  """Busca template por nome"""
-  notificationTemplateByName(name: String!): NotificationTemplate!
+  """Busca um template específico por eventKey e channel"""
+  notificationTemplate(channel: String!, eventKey: String!): EventNotificationTemplate
 
-  """Lista templates de notificação com filtros opcionais"""
-  notificationTemplates(category: String, channel: String, isActive: Boolean, search: String): [NotificationTemplate!]!
+  """Busca templates de notificação com filtros opcionais"""
+  notificationTemplates(filters: TemplateFiltersDto): [EventNotificationTemplate!]!
 
-  """Gera preview de template com dados de exemplo"""
-  previewNotificationTemplate(sampleData: String, templateName: String!): String!
-
-  """Valida sintaxe LiquidJS de um template"""
-  validateTemplateContent(content: String!): Boolean!
-}
-
-"""Dados do destinatário da notificação"""
-input RecipientDto {
-  """Email do destinatário"""
-  email: String!
-
-  """ID externo do destinatário"""
-  externalId: String
-
-  """ID único do destinatário"""
-  id: String!
-
-  """Nome do destinatário"""
-  name: String!
+  """Busca todos os templates de um evento específico"""
+  notificationTemplatesByEvent(eventKey: String!): [EventNotificationTemplate!]!
 }
 
 input RegisterDto {
@@ -209,22 +172,19 @@ input RegisterDto {
   username: String!
 }
 
-"""Estatísticas do sistema de retry de notificações"""
-type RetryStatistics {
-  """Número de notificações que falharam"""
-  failed: Float!
+"""Dados para reenvio de email de verificação"""
+input ResendVerificationEmailDto {
+  """Email do usuário para reenvio da verificação"""
+  email: String!
+}
 
-  """Número de notificações pendentes"""
-  pending: Float!
+"""Dados para redefinição de senha"""
+input ResetPasswordDto {
+  """Nova senha do usuário"""
+  newPassword: String!
 
-  """Número de notificações sendo reenviadas"""
-  retrying: Float!
-
-  """Número de notificações enviadas com sucesso"""
-  success: Float!
-
-  """Número total de notificações"""
-  total: Float!
+  """Token de recuperação de senha"""
+  token: String!
 }
 
 """Papéis de usuário definidos no sistema"""
@@ -234,21 +194,6 @@ enum Role {
   USER
 }
 
-"""Dados para envio de notificação"""
-input SendNotificationDto {
-  """Dados dinâmicos em formato JSON para interpolação"""
-  data: String!
-
-  """Metadados opcionais em formato JSON"""
-  meta: String
-
-  """Dados do destinatário"""
-  recipient: RecipientDto!
-
-  """Nome do template a ser utilizado"""
-  templateName: String!
-}
-
 """Resposta simples para operações como logout"""
 type SimpleStatusPayload {
   """Mensagem opcional de status"""
@@ -256,6 +201,48 @@ type SimpleStatusPayload {
 
   """Indica se a operação foi bem-sucedida"""
   success: Boolean!
+}
+
+"""Filtros para busca de templates de notificação"""
+input TemplateFiltersDto {
+  """Canal de notificação para filtrar"""
+  channel: NotificationChannel
+
+  """Chave do evento para filtrar"""
+  eventKey: String
+
+  """Status ativo para filtrar"""
+  isActive: Boolean
+}
+
+"""Resultado da validação de template"""
+type TemplateValidationResponse {
+  """Variáveis disponíveis para o eventKey"""
+  availableVariables: [String!]!
+
+  """Lista de erros encontrados"""
+  errors: [String!]!
+
+  """Se o template é válido"""
+  isValid: Boolean!
+
+  """Variáveis usadas no template"""
+  usedVariables: [String!]!
+
+  """Lista de avisos"""
+  warnings: [String!]!
+}
+
+"""Dados para atualização de template de notificação"""
+input UpdateTemplateDto {
+  """Conteúdo do template com sintaxe LiquidJS"""
+  content: String
+
+  """Se o template está ativo"""
+  isActive: Boolean
+
+  """Título da notificação"""
+  title: String
 }
 
 """Dados para atualizar um usuário existente"""
@@ -278,6 +265,9 @@ type User {
   """Endereço de e-mail único do usuário"""
   email: String!
 
+  """Indica se o email foi verificado"""
+  emailVerified: Boolean!
+
   """ID único do usuário"""
   id: ID!
 
@@ -289,4 +279,19 @@ type User {
 
   """Nome de usuário único"""
   username: String!
+}
+
+"""Dados para validação de template"""
+input ValidateTemplateDto {
+  """Conteúdo do template"""
+  content: String!
+
+  """Chave do evento"""
+  eventKey: String!
+}
+
+"""Dados para verificação de email"""
+input VerifyEmailDto {
+  """Token de verificação de email"""
+  token: String!
 }

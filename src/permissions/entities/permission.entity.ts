@@ -39,7 +39,7 @@ export class Permission {
    * Gerado automaticamente pelo sistema
    */
   @Field(() => ID, { description: 'ID único da permissão' })
-  id: string;
+  id!: string;
 
   /**
    * ID do usuário proprietário da permissão
@@ -48,7 +48,7 @@ export class Permission {
   @Field(() => String, {
     description: 'ID do usuário ao qual a permissão pertence',
   })
-  userId: string;
+  userId!: string;
 
   /**
    * Ação que está sendo permitida ou negada
@@ -57,7 +57,7 @@ export class Permission {
   @Field(() => Action, {
     description: 'Ação permitida ou negada (ex: read, update)',
   })
-  action: Action;
+  action!: Action;
 
   /**
    * Entidade ou recurso alvo da permissão
@@ -67,7 +67,7 @@ export class Permission {
     description:
       'Entidade ou recurso ao qual a ação se aplica (ex: User, Post, all)',
   })
-  subject: string;
+  subject!: string;
 
   /**
    * Condições adicionais em formato JSON
@@ -87,7 +87,7 @@ export class Permission {
     defaultValue: false,
     description: 'Indica se a permissão é invertida (cannot)',
   })
-  inverted: boolean;
+  inverted!: boolean;
 
   /**
    * Justificativa ou descrição da permissão

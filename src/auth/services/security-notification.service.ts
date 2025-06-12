@@ -1,6 +1,6 @@
 import { Injectable, Logger } from '@nestjs/common';
 import { ConfigService } from '@nestjs/config';
-import { NotificationService } from '../../notifications/services/notification.service';
+import { EventNotificationService } from '../../notifications/services/event-notification.service';
 
 /**
  * Serviço responsável por notificações de segurança
@@ -11,7 +11,7 @@ export class SecurityNotificationService {
   private readonly logger = new Logger(SecurityNotificationService.name);
 
   constructor(
-    private readonly notificationService: NotificationService,
+    private readonly eventNotificationService: EventNotificationService,
     private readonly configService: ConfigService,
   ) {}
 
@@ -36,20 +36,23 @@ export class SecurityNotificationService {
         securityUrl: `${this.configService.get<string>('APP_BASE_URL', 'http://localhost:3000')}/auth/security`,
       };
 
-      await this.notificationService.sendNotification({
-        templateName: 'auth-login-notification',
-        recipient: {
-          id: userInfo.id,
-          name: userInfo.username,
-          email: userInfo.email,
-        },
-        data: templateData,
-        meta: {
-          type: 'login_notification',
+      await this.eventNotificationService.sendNotification(
+        'LOGIN_NOTIFICATION',
+        {
           timestamp: now.toISOString(),
-          ipAddress: loginInfo.ipAddress,
+          recipient: {
+            id: userInfo.id,
+            name: userInfo.username,
+            email: userInfo.email,
+          },
+          data: templateData,
+          meta: {
+            type: 'login_notification',
+            timestamp: now.toISOString(),
+            ipAddress: loginInfo.ipAddress,
+          },
         },
-      });
+      );
 
       this.logger.log(`Notificação de login enviada para: ${userInfo.email}`);
     } catch (error) {
@@ -85,8 +88,8 @@ export class SecurityNotificationService {
         supportUrl: `${this.configService.get<string>('APP_BASE_URL', 'http://localhost:3000')}/support`,
       };
 
-      await this.notificationService.sendNotification({
-        templateName: 'auth-data-changed',
+      await this.eventNotificationService.sendNotification('DATA_CHANGED', {
+        timestamp: now.toISOString(),
         recipient: {
           id: userInfo.id,
           name: userInfo.username,
@@ -132,8 +135,8 @@ export class SecurityNotificationService {
         securityUrl: `${this.configService.get<string>('APP_BASE_URL', 'http://localhost:3000')}/auth/security`,
       };
 
-      await this.notificationService.sendNotification({
-        templateName: 'auth-password-changed',
+      await this.eventNotificationService.sendNotification('PASSWORD_CHANGED', {
+        timestamp: now.toISOString(),
         recipient: {
           id: userInfo.id,
           name: userInfo.username,

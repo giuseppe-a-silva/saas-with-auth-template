@@ -7,20 +7,20 @@ import { Field, ObjectType } from '@nestjs/graphql';
 @ObjectType({ description: 'Status de saúde de um canal de notificação' })
 export class ChannelHealthStatus {
   @Field(() => String, { description: 'Nome do canal de notificação' })
-  channel: string;
+  channel!: string;
 
   @Field(() => String, {
     description: 'Provedor do canal (ex: SendGrid, Twilio)',
   })
-  provider: string;
+  provider!: string;
 
   @Field(() => Boolean, {
     description: 'Indica se o canal está funcionando corretamente',
   })
-  isHealthy: boolean;
+  isHealthy!: boolean;
 
   @Field(() => Boolean, { description: 'Indica se o canal está configurado' })
-  isConfigured: boolean;
+  isConfigured!: boolean;
 
   @Field(() => Number, {
     nullable: true,

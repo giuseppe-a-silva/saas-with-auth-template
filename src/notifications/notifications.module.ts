@@ -1,55 +1,57 @@
 import { Module } from '@nestjs/common';
 import { ConfigModule } from '@nestjs/config';
 import { DatabaseModule } from '../database/prisma.module';
-
-// Services
-import { NotificationTemplateService } from './services/notification-template.service';
-import { NotificationService } from './services/notification.service';
-import { RateLimiterService } from './services/rate-limiter.service';
-import { RetryService } from './services/retry.service';
-import { TemplateRendererService } from './services/template-renderer.service';
-
-// Dispatchers
 import { DispatcherFactory } from './dispatchers/dispatcher.factory';
 import { EmailDispatcher } from './dispatchers/email.dispatcher';
 import { PushDispatcher } from './dispatchers/push.dispatcher';
 import { RealtimeDispatcher } from './dispatchers/realtime.dispatcher';
-import { WebhookDispatcher } from './dispatchers/webhook.dispatcher';
-
-// Resolvers
+import { NotificationProcessor } from './processors/notification.processor';
 import { NotificationTemplateResolver } from './resolvers/notification-template.resolver';
-import { NotificationResolver } from './resolvers/notification.resolver';
+import { TemplateValidationResolver } from './resolvers/template-validation.resolver';
+import { EventNotificationService } from './services/event-notification.service';
+import { NotificationMetricsService } from './services/notification-metrics.service';
+
+import { RateLimiterService } from './services/rate-limiter.service';
+import { RetryService } from './services/retry.service';
+import { TemplateManagerService } from './services/template-manager.service';
+import { TemplateRendererService } from './services/template-renderer.service';
+import { TemplateValidationService } from './services/template-validation.service';
 
 /**
- * Módulo de notificações
- * Centraliza e padroniza o envio de notificações em diferentes canais
+ * Módulo de notificações refatorado para arquitetura event-driven
+ * Utiliza BullMQ para processamento assíncrono e Redis para cache
  */
 @Module({
-  imports: [ConfigModule, DatabaseModule],
+  imports: [DatabaseModule, ConfigModule],
   providers: [
-    // Services
-    TemplateRendererService,
-    NotificationTemplateService,
-    NotificationService,
-    RateLimiterService,
+    // Serviços principais
     RetryService,
-
+    EventNotificationService,
+    NotificationMetricsService,
+    RateLimiterService,
+    TemplateRendererService,
+    TemplateManagerService,
+    TemplateValidationService,
     // Dispatchers
+    DispatcherFactory,
     EmailDispatcher,
     PushDispatcher,
     RealtimeDispatcher,
-    WebhookDispatcher,
-    DispatcherFactory,
 
-    // Resolvers
+    // Processador BullMQ
+    NotificationProcessor,
+
+    // Resolvers GraphQL
     NotificationTemplateResolver,
-    NotificationResolver,
+    TemplateValidationResolver,
   ],
   exports: [
+    EventNotificationService,
+    NotificationMetricsService,
+    RateLimiterService,
     TemplateRendererService,
-    NotificationTemplateService,
-    NotificationService,
-    DispatcherFactory,
+    TemplateManagerService,
+    TemplateValidationService,
   ],
 })
 export class NotificationsModule {}

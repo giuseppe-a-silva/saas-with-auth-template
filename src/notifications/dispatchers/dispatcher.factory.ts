@@ -8,7 +8,6 @@ import {
 import { EmailDispatcher } from './email.dispatcher';
 import { PushDispatcher } from './push.dispatcher';
 import { RealtimeDispatcher } from './realtime.dispatcher';
-import { WebhookDispatcher } from './webhook.dispatcher';
 
 /**
  * Interface para status de canal
@@ -40,7 +39,6 @@ export class DispatcherFactory {
     private readonly emailDispatcher: EmailDispatcher,
     private readonly pushDispatcher: PushDispatcher,
     private readonly realtimeDispatcher: RealtimeDispatcher,
-    private readonly webhookDispatcher: WebhookDispatcher,
   ) {
     this.initializeDispatchers();
   }
@@ -50,16 +48,15 @@ export class DispatcherFactory {
    */
   private initializeDispatchers(): void {
     try {
-      // Registra dispatchers por canal
+      // Usa o dispatcher de email que detecta automaticamente SMTP/SES
       this.dispatchers.set(NotificationChannel.EMAIL, this.emailDispatcher);
+      this.logger.log('Using email dispatcher (auto-detects SMTP/SES)');
+
+      // Registra outros dispatchers
       this.dispatchers.set(NotificationChannel.PUSH, this.pushDispatcher);
       this.dispatchers.set(
         NotificationChannel.REALTIME,
         this.realtimeDispatcher,
-      );
-      this.dispatchers.set(
-        NotificationChannel.THIRD_PARTY,
-        this.webhookDispatcher,
       );
 
       this.logger.log('Dispatchers inicializados', {

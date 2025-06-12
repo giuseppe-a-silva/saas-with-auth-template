@@ -22,19 +22,37 @@ export type Subjects = InferSubjects<User> | 'User' | 'Post' | 'all';
 export type AppAbility = Ability<[Action, Subjects]>;
 
 /**
+ * Interface para cache de permissões do usuário
+ */
+interface UserPermissionsCache {
+  permissions: PrismaPermission[];
+  cachedAt: number;
+  expiresAt: number;
+}
+
+/**
  * Factory responsável pela criação de abilities CASL para usuários
  * Combina permissões baseadas em roles com permissões específicas do banco de dados
+ * Implementa cache em memória para otimizar performance
  */
 @Injectable()
 export class CaslAbilityFactory {
   private readonly logger = new Logger(CaslAbilityFactory.name);
+  private readonly permissionsCache = new Map<string, UserPermissionsCache>();
+  private readonly CACHE_TTL_MS = 5 * 60 * 1000; // 5 minutos
+  private readonly CLEANUP_INTERVAL_MS = 10 * 60 * 1000; // 10 minutos
 
-  constructor(private readonly permissionsService: PermissionsService) {}
+  constructor(private readonly permissionsService: PermissionsService) {
+    // Configurar limpeza automática do cache
+    setInterval(() => {
+      this.cleanupExpiredCache();
+    }, this.CLEANUP_INTERVAL_MS);
+  }
 
   /**
    * Cria uma instância de Ability personalizada para um usuário específico
    * Combina permissões baseadas em roles (ADMIN, EDITOR, USER) com permissões
-   * específicas armazenadas no banco de dados
+   * específicas armazenadas no banco de dados com cache em memória
    *
    * @param user - Usuário para o qual criar as abilities (sem senha)
    * @returns Instância de AppAbility com todas as permissões do usuário
@@ -68,11 +86,9 @@ export class CaslAbilityFactory {
       this.logger.debug('Permissões de USER aplicadas', { userId: user.id });
     }
 
-    // --- Permissões Baseadas em Políticas do Banco de Dados ---
+    // --- Permissões Baseadas em Políticas do Banco de Dados (com Cache) ---
     try {
-      const dbPermissions = await this.permissionsService.findUserPermissions(
-        user.id,
-      );
+      const dbPermissions = await this.getUserPermissionsWithCache(user.id);
 
       this.logger.debug('Aplicando permissões específicas do banco', {
         userId: user.id,
@@ -139,5 +155,112 @@ export class CaslAbilityFactory {
       });
       throw error;
     }
+  }
+
+  /**
+   * Busca permissões do usuário com cache em memória
+   * @param userId - ID do usuário
+   * @returns Lista de permissões específicas do usuário
+   * @private
+   */
+  private async getUserPermissionsWithCache(
+    userId: string,
+  ): Promise<PrismaPermission[]> {
+    const now = Date.now();
+    const cached = this.permissionsCache.get(userId);
+
+    // Verificar se existe cache válido
+    if (cached && now < cached.expiresAt) {
+      this.logger.debug('Permissões obtidas do cache', {
+        userId,
+        cacheAge: now - cached.cachedAt,
+        permissionsCount: cached.permissions.length,
+      });
+      return cached.permissions;
+    }
+
+    // Buscar do banco e atualizar cache
+    this.logger.debug('Buscando permissões do banco (cache miss)', { userId });
+    const permissions =
+      await this.permissionsService.findUserPermissions(userId);
+
+    // Armazenar no cache
+    this.permissionsCache.set(userId, {
+      permissions,
+      cachedAt: now,
+      expiresAt: now + this.CACHE_TTL_MS,
+    });
+
+    this.logger.debug('Permissões armazenadas no cache', {
+      userId,
+      permissionsCount: permissions.length,
+      ttlMs: this.CACHE_TTL_MS,
+    });
+
+    return permissions;
+  }
+
+  /**
+   * Invalida cache de permissões de um usuário específico
+   * Útil quando permissões são atualizadas
+   * @param userId - ID do usuário
+   */
+  invalidateUserCache(userId: string): void {
+    if (this.permissionsCache.has(userId)) {
+      this.permissionsCache.delete(userId);
+      this.logger.debug('Cache de permissões invalidado', { userId });
+    }
+  }
+
+  /**
+   * Invalida todo o cache de permissões
+   * Útil para limpeza global ou em caso de atualizações em massa
+   */
+  invalidateAllCache(): void {
+    const cacheSize = this.permissionsCache.size;
+    this.permissionsCache.clear();
+    this.logger.log('Todo o cache de permissões foi invalidado', {
+      previousCacheSize: cacheSize,
+    });
+  }
+
+  /**
+   * Remove entradas expiradas do cache
+   * Executado automaticamente em intervalos regulares
+   * @private
+   */
+  private cleanupExpiredCache(): void {
+    const now = Date.now();
+    let cleanedCount = 0;
+
+    for (const [userId, cached] of this.permissionsCache.entries()) {
+      if (now >= cached.expiresAt) {
+        this.permissionsCache.delete(userId);
+        cleanedCount++;
+      }
+    }
+
+    if (cleanedCount > 0) {
+      this.logger.debug('Cache cleanup executado', {
+        cleanedEntries: cleanedCount,
+        remainingEntries: this.permissionsCache.size,
+      });
+    }
+  }
+
+  /**
+   * Retorna estatísticas do cache para monitoramento
+   * @returns Estatísticas do cache de permissões
+   */
+  getCacheStats(): {
+    size: number;
+    ttlMs: number;
+    cleanupIntervalMs: number;
+  } {
+    return {
+      size: this.permissionsCache.size,
+      ttlMs: this.CACHE_TTL_MS,
+      cleanupIntervalMs: this.CLEANUP_INTERVAL_MS,
+    };
   }
 }

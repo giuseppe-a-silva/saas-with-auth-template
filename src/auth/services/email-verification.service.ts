@@ -2,7 +2,7 @@ import { BadRequestException, Injectable, Logger } from '@nestjs/common';
 import { ConfigService } from '@nestjs/config';
 import * as crypto from 'crypto';
 import { PrismaService } from '../../database/prisma.service';
-import { NotificationService } from '../../notifications/services/notification.service';
+import { EventNotificationService } from '../../notifications/services/event-notification.service';
 
 /**
  * Serviço responsável pela verificação de email dos usuários
@@ -14,7 +14,7 @@ export class EmailVerificationService {
 
   constructor(
     private readonly prisma: PrismaService,
-    private readonly notificationService: NotificationService,
+    private readonly eventNotificationService: EventNotificationService,
     private readonly configService: ConfigService,
   ) {}
 
@@ -66,42 +66,47 @@ export class EmailVerificationService {
         },
       });
 
-      // Constrói URL de verificação
+      // Configura dados para o template
       const baseUrl = this.configService.get<string>(
         'APP_BASE_URL',
         'http://localhost:3000',
       );
       const verificationUrl = `${baseUrl}/auth/verify-email?token=${verificationToken}`;
-
-      // Dados para o template
+      const supportUrl = `${baseUrl}/support`;
       const templateData = {
         userName: username,
         verificationUrl,
-        supportUrl: `${baseUrl}/support`,
+        supportUrl,
       };
 
-      // Envia email usando o sistema de notificações
-      await this.notificationService.sendNotification({
-        templateName: 'auth-email-verification',
-        recipient: {
-          id: userId,
-          name: username,
-          email,
+      // Envia notificação via sistema de eventos
+      await this.eventNotificationService.sendNotification(
+        'EMAIL_VERIFICATION',
+        {
+          timestamp: new Date().toISOString(),
+          recipient: {
+            id: userId,
+            name: username,
+            email,
+          },
+          data: templateData,
+          meta: {
+            type: 'email_verification',
+            expiresAt: expiresAt.toISOString(),
+          },
         },
-        data: templateData,
-        meta: {
-          type: 'email_verification',
-          expiresAt: expiresAt.toISOString(),
-        },
-      });
+      );
 
       this.logger.log(`Email de verificação enviado para: ${email}`);
       return true;
     } catch (error) {
-      this.logger.error(
-        `Erro ao enviar email de verificação para ${email}:`,
-        error,
-      );
+      const errorMessage =
+        error instanceof Error ? error.message : 'Erro desconhecido';
+      this.logger.error('Erro ao enviar email de verificação', {
+        error: errorMessage,
+        email,
+        userId,
+      });
       return false;
     }
   }
@@ -197,20 +202,30 @@ export class EmailVerificationService {
       }
 
       if (user.emailVerified) {
-        throw new BadRequestException('Este email já foi verificado.');
+        throw new BadRequestException('Email já foi verificado.');
       }
 
-      return await this.sendVerificationEmail(
+      const result = await this.sendVerificationEmail(
         user.id,
         user.email,
         user.username,
       );
+
+      return result;
     } catch (error) {
       if (error instanceof BadRequestException) {
         throw error;
       }
-      this.logger.error(`Erro ao reenviar email de verificação:`, error);
-      throw new BadRequestException('Erro interno ao reenviar email.');
+
+      const errorMessage =
+        error instanceof Error ? error.message : 'Erro desconhecido';
+      this.logger.error('Erro ao reenviar email de verificação', {
+        error: errorMessage,
+        email,
+      });
+      throw new BadRequestException(
+        'Erro interno ao reenviar email de verificação.',
+      );
     }
   }
 }

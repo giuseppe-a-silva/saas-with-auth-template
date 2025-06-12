@@ -8,25 +8,25 @@ import { NotificationStatus } from '../interfaces/notification-dispatcher.interf
 @ObjectType({ description: 'Log de notificação para auditoria' })
 export class NotificationLog {
   @Field(() => String, { description: 'ID único do log' })
-  id: string;
+  id!: string;
 
   @Field(() => String, { description: 'ID da notificação' })
-  notificationId: string;
+  notificationId!: string;
 
   @Field(() => String, { description: 'Nome do template usado' })
-  templateName: string;
+  templateName!: string;
 
   @Field(() => String, { description: 'Canal de envio' })
-  channel: string;
+  channel!: string;
 
   @Field(() => String, { description: 'Categoria da notificação' })
-  category: string;
+  category!: string;
 
   @Field(() => String, { description: 'Email do destinatário' })
-  recipientEmail: string;
+  recipientEmail!: string;
 
   @Field(() => String, { description: 'Status do envio' })
-  status: NotificationStatus;
+  status!: NotificationStatus;
 
   @Field(() => String, {
     nullable: true,
@@ -47,12 +47,12 @@ export class NotificationLog {
   errorCode?: string;
 
   @Field(() => Number, { description: 'Número da tentativa (para retry)' })
-  attemptNumber: number;
+  attemptNumber!: number;
 
   @Field(() => String, {
     description: 'Provedor usado (smtp, aws-ses, onesignal, etc.)',
   })
-  provider: string;
+  provider!: string;
 
   @Field(() => String, {
     nullable: true,
@@ -61,7 +61,7 @@ export class NotificationLog {
   metadata?: string;
 
   @Field(() => Date, { description: 'Data de criação do log' })
-  createdAt: Date;
+  createdAt!: Date;
 
   @Field(() => Date, { nullable: true, description: 'Data efetiva do envio' })
   sentAt?: Date;
@@ -69,5 +69,5 @@ export class NotificationLog {
   @Field(() => Number, {
     description: 'Tempo de processamento em milissegundos',
   })
-  processingTimeMs: number;
+  processingTimeMs!: number;
 }

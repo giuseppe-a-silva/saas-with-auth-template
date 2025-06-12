@@ -1,8 +1,7 @@
-# 🔐 Sistema de Autenticação EduMatch
+# 🔐 Sistema de Autenticação - EduMatch
 
 **Versão:** 1.0  
-**Data:** 06/01/2025  
-**Autor:** Sistema EduMatch
+**Data:** Janeiro 2025
 
 ---
 

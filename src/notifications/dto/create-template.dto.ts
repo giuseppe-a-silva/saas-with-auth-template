@@ -30,7 +30,7 @@ export class CreateTemplateDto {
   @Transform(({ value }: { value: unknown }) =>
     typeof value === 'string' ? value.trim().toLowerCase() : value,
   )
-  name: string;
+  name!: string;
 
   /**
    * Título da notificação
@@ -44,7 +44,7 @@ export class CreateTemplateDto {
   @Transform(({ value }: { value: unknown }) =>
     typeof value === 'string' ? value.trim() : value,
   )
-  title: string;
+  title!: string;
 
   /**
    * Conteúdo da mensagem com sintaxe LiquidJS
@@ -59,7 +59,7 @@ export class CreateTemplateDto {
   @MaxLength(10000, {
     message: 'O conteúdo não pode ter mais de 10.000 caracteres.',
   })
-  content: string;
+  content!: string;
 
   /**
    * Categoria/domínio da notificação
@@ -72,7 +72,7 @@ export class CreateTemplateDto {
   @IsEnum(NotificationCategory, {
     message: 'Categoria deve ser uma das opções válidas.',
   })
-  category: NotificationCategory;
+  category!: NotificationCategory;
 
   /**
    * Canal de envio da notificação
@@ -85,7 +85,7 @@ export class CreateTemplateDto {
   @IsEnum(NotificationChannel, {
     message: 'Canal deve ser uma das opções válidas.',
   })
-  channel: NotificationChannel;
+  channel!: NotificationChannel;
 
   /**
    * Status ativo do template

@@ -13,5 +13,5 @@ export class ForgotPasswordDto {
    */
   @Field({ description: 'Email do usuário para recuperação de senha' })
   @IsValidEmail()
-  email: string;
+  email!: string;
 }

@@ -1,5 +1,6 @@
 import { Logger, ValidationPipe } from '@nestjs/common';
 import { NestFactory, Reflector } from '@nestjs/core';
+import { useContainer } from 'class-validator';
 import * as cookieParser from 'cookie-parser';
 import { AppModule } from './app.module';
 import { FeatureFlagsConfig } from './common/config/feature-flags.config';
@@ -26,6 +27,9 @@ async function bootstrap(): Promise<void> {
   app.useGlobalInterceptors(
     new AuditInterceptor(auditService, featureFlags, reflector),
   );
+
+  // Configura o class-validator para usar o container de DI do NestJS
+  useContainer(app.select(AppModule), { fallbackOnErrors: true });
 
   // Habilita validação global usando class-validator e class-transformer
   app.useGlobalPipes(

@@ -23,7 +23,7 @@ export class RegisterDto {
     message:
       'O nome de usuário pode conter apenas letras, números, hífen (-) e underscore (_).',
   })
-  username: string;
+  username!: string;
 
   /**
    * Endereço de email único do usuário
@@ -35,7 +35,7 @@ export class RegisterDto {
     message:
       'Email deve ter um formato válido e não pode ser um email temporário.',
   })
-  email: string;
+  email!: string;
 
   /**
    * Senha para acesso à conta
@@ -49,5 +49,5 @@ export class RegisterDto {
   @IsStrongPassword({
     message: 'A senha deve atender aos critérios de segurança definidos.',
   })
-  password: string;
+  password!: string;
 }

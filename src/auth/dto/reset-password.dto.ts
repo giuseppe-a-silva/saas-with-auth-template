@@ -18,7 +18,7 @@ export class ResetPasswordDto {
   @Length(32, 128, {
     message: 'O token deve ter entre 32 e 128 caracteres.',
   })
-  token: string;
+  token!: string;
 
   /**
    * Nova senha do usuário
@@ -26,5 +26,5 @@ export class ResetPasswordDto {
    */
   @Field({ description: 'Nova senha do usuário' })
   @IsStrongPassword()
-  newPassword: string;
+  newPassword!: string;
 }

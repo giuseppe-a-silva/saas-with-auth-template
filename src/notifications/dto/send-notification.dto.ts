@@ -21,7 +21,7 @@ export class RecipientDto {
   @Field(() => String, { description: 'ID único do destinatário' })
   @IsNotEmpty({ message: 'O ID do destinatário não pode estar vazio.' })
   @IsString({ message: 'O ID deve ser uma string.' })
-  id: string;
+  id!: string;
 
   /**
    * Nome do destinatário
@@ -34,7 +34,7 @@ export class RecipientDto {
   @Transform(({ value }: { value: unknown }) =>
     typeof value === 'string' ? value.trim() : value,
   )
-  name: string;
+  name!: string;
 
   /**
    * Email do destinatário
@@ -45,7 +45,7 @@ export class RecipientDto {
   @Transform(({ value }: { value: unknown }) =>
     typeof value === 'string' ? value.trim().toLowerCase() : value,
   )
-  email: string;
+  email!: string;
 
   /**
    * ID externo do destinatário (opcional)
@@ -71,7 +71,7 @@ export class SendNotificationDto {
   @Field(() => String, { description: 'Nome do template a ser utilizado' })
   @IsNotEmpty({ message: 'O nome do template não pode estar vazio.' })
   @IsString({ message: 'O nome do template deve ser uma string.' })
-  templateName: string;
+  templateName!: string;
 
   /**
    * Dados do destinatário da notificação
@@ -79,7 +79,7 @@ export class SendNotificationDto {
   @Field(() => RecipientDto, { description: 'Dados do destinatário' })
   @ValidateNested()
   @Type(() => RecipientDto)
-  recipient: RecipientDto;
+  recipient!: RecipientDto;
 
   /**
    * Dados dinâmicos para interpolação no template
@@ -89,7 +89,7 @@ export class SendNotificationDto {
   })
   @IsNotEmpty({ message: 'Os dados não podem estar vazios.' })
   @IsString({ message: 'Os dados devem ser uma string JSON válida.' })
-  data: string; // String JSON que será parseada
+  data!: string; // String JSON que será parseada
 
   /**
    * Metadados opcionais para rastreabilidade

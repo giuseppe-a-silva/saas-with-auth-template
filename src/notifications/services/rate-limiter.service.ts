@@ -281,29 +281,7 @@ export class RateLimiterService {
         ) ?? DEFAULT_RATE_LIMITS.realtime.burstLimit,
     });
 
-    // Third Party
-    this.channelLimits.set(NotificationChannel.THIRD_PARTY, {
-      perMinute:
-        this.configService.get<number>(
-          'NOTIFICATION_WEBHOOK_LIMIT_PER_MINUTE',
-          DEFAULT_RATE_LIMITS.webhook.perMinute,
-        ) ?? DEFAULT_RATE_LIMITS.webhook.perMinute,
-      perHour:
-        this.configService.get<number>(
-          'NOTIFICATION_WEBHOOK_LIMIT_PER_HOUR',
-          DEFAULT_RATE_LIMITS.webhook.perHour,
-        ) ?? DEFAULT_RATE_LIMITS.webhook.perHour,
-      perDay:
-        this.configService.get<number>(
-          'NOTIFICATION_WEBHOOK_LIMIT_PER_DAY',
-          DEFAULT_RATE_LIMITS.webhook.perDay,
-        ) ?? DEFAULT_RATE_LIMITS.webhook.perDay,
-      burstLimit:
-        this.configService.get<number>(
-          'NOTIFICATION_WEBHOOK_BURST_LIMIT',
-          DEFAULT_RATE_LIMITS.webhook.burstLimit,
-        ) ?? DEFAULT_RATE_LIMITS.webhook.burstLimit,
-    });
+    // Third Party removido da nova arquitetura event-driven
 
     this.logger.log('Rate limits configurados para todos os canais');
   }

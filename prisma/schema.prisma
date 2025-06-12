@@ -33,12 +33,15 @@ model User {
   updatedAt DateTime @updatedAt
   permissions Permission[]
   auditLogs AuditLog[]
-  notificationTemplates NotificationTemplate[] // templates criados pelo usuário
+  eventNotificationTemplates EventNotificationTemplate[] // templates criados pelo usuário
   
   // Índices para performance dos novos campos
   @@index([emailVerificationToken])
   @@index([passwordResetToken])
   @@index([emailVerified])
+  @@index([role])
+  @@index([createdAt])
+  @@index([updatedAt])
 }
 
 enum Role {
@@ -58,6 +61,11 @@ model Permission {
   user      User     @relation(fields: [userId], references: [id], onDelete: Cascade)
 
   @@unique([userId, action, subject, condition, inverted]) // Ensure unique permissions per user
+  // Índices otimizados para queries de permissões
+  @@index([userId]) // Query principal para buscar permissões por usuário
+  @@index([action, subject]) // Query para verificação de permissões específicas
+  @@index([userId, action]) // Query otimizada para verificações rápidas
+  @@index([inverted]) // Separar permissões positivas e negativas
 }
 
 model AuditLog {
@@ -80,12 +88,15 @@ model AuditLog {
   // Relacionamento opcional com usuário
   user          User?             @relation(fields: [userId], references: [id], onDelete: SetNull)
   
-  // Índices para performance
+  // Índices para performance de queries de auditoria
   @@index([userId])
   @@index([action])
   @@index([createdAt])
   @@index([expiresAt])
   @@index([ipAddress])
+  @@index([userId, action]) // Query combinada para auditoria por usuário e ação
+  @@index([action, createdAt]) // Query para relatórios por período
+  @@index([resource, resourceId]) // Query para auditoria de recursos específicos
 }
 
 enum AuditActionType {
@@ -120,14 +131,13 @@ enum AuditActionType {
   TEMPLATE_DELETED
 }
 
-// Modelo para templates de notificação
-model NotificationTemplate {
+// Modelo para templates de notificação por evento
+model EventNotificationTemplate {
   id          String                    @id @default(uuid())
-  name        String                    @unique // identificador único do template
-  title       String                    // título da notificação (assunto do email, título do push)
-  content     String                    // conteúdo da mensagem com sintaxe LiquidJS
-  category    NotificationCategory      // categoria/domínio da notificação
-  channel     NotificationChannel       // canal de envio da notificação
+  eventKey    String                    // chave do evento (ex: USER_REGISTERED, LOGIN)
+  channel     NotificationChannel       // canal específico para este evento
+  title       String                    // título da notificação
+  content     String                    // conteúdo LiquidJS do template
   isActive    Boolean                   @default(true) // se o template está ativo
   createdBy   String?                   // ID do usuário que criou (nullable para templates de sistema)
   createdAt   DateTime                  @default(now())
@@ -136,27 +146,21 @@ model NotificationTemplate {
   // Relacionamento opcional com usuário criador
   creator     User?                     @relation(fields: [createdBy], references: [id], onDelete: SetNull)
   
+  // Garantir que cada eventKey + channel seja único
+  @@unique([eventKey, channel])
+  
   // Índices para performance
-  @@index([name])
-  @@index([category])
+  @@index([eventKey])
   @@index([channel])
   @@index([isActive])
+  @@index([eventKey, isActive]) // Query para buscar templates ativos por evento
 }
 
 // Enums para o módulo de notificações
-enum NotificationCategory {
-  SISTEMA
-  AUTH
-  LEADS
-  MARKETING
-  ADMIN
-}
-
 enum NotificationChannel {
   EMAIL
   PUSH
   REALTIME
-  THIRD_PARTY
 }
 
 enum NotificationStatus {

@@ -52,7 +52,6 @@ export enum NotificationChannel {
   EMAIL = 'EMAIL',
   PUSH = 'PUSH',
   REALTIME = 'REALTIME',
-  THIRD_PARTY = 'THIRD_PARTY',
 }
 
 export enum NotificationStatus {
@@ -169,14 +168,4 @@ export interface RealtimeConfig {
   channelName: string;
   eventName: string;
   data: Record<string, unknown>;
-}
-
-/**
- * Configurações específicas para webhooks
- */
-export interface WebhookConfig {
-  url: string;
-  method: 'POST' | 'PUT';
-  headers?: Record<string, string>;
-  timeout?: number;
 }

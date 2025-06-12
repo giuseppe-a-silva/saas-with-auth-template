@@ -8,6 +8,7 @@ import { AppService } from './app.service';
 import { AuthModule } from './auth/auth.module';
 import { AuthResolver } from './auth/resolvers/auth.resolver';
 import { CaslModule } from './casl/casl.module';
+import { CommonModule } from './common/common.module';
 import { ConfigModule } from './config/config.module';
 import { DatabaseModule } from './database/prisma.module';
 import { NotificationsModule } from './notifications/notifications.module';
@@ -19,6 +20,7 @@ import { UsersModule } from './users/users.module';
   imports: [
     ConfigModule,
     DatabaseModule,
+    CommonModule,
     AuthModule,
     UsersModule,
     CaslModule,

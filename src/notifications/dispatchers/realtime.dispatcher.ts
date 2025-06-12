@@ -12,43 +12,36 @@ import {
 } from '../interfaces/notification-dispatcher.interface';
 
 /**
- * Dispatcher para notificações em tempo real via Pusher/Soketi
- * Ideal para dashboards e aplicações que precisam de updates instantâneos
+ * Dispatcher para notificações em tempo real
+ * Suporta Pusher e Soketi com configuração via .env
+ * Detecta automaticamente qual provider usar baseado na variável REALTIME_PROVIDER
  */
 @Injectable()
 export class RealtimeDispatcher implements NotificationDispatcher {
   readonly channel = NotificationChannel.REALTIME;
   private readonly logger = new Logger(RealtimeDispatcher.name);
   private pusherClient: Pusher | null = null;
+  private activeProvider: 'pusher' | 'soketi' | null = null;
 
   constructor(private readonly configService: ConfigService) {
     this.initializeClient();
   }
 
   /**
-   * Inicializa o cliente Pusher
+   * Inicializa o cliente baseado na configuração
    */
   private initializeClient(): void {
     try {
-      const appId = this.configService.get<string>('PUSHER_APP_ID');
-      const key = this.configService.get<string>('PUSHER_KEY');
-      const secret = this.configService.get<string>('PUSHER_SECRET');
-      const cluster = this.configService.get<string>('PUSHER_CLUSTER', 'mt1');
+      const realtimeProvider = this.configService.get<string>(
+        'REALTIME_PROVIDER',
+        'pusher',
+      );
 
-      if (!appId || !key || !secret) {
-        this.logger.warn('Pusher não configurado - credenciais ausentes');
-        return;
+      if (realtimeProvider === 'soketi') {
+        this.initializeSoketi();
+      } else {
+        this.initializePusher();
       }
-
-      this.pusherClient = new Pusher({
-        appId,
-        key,
-        secret,
-        cluster,
-        useTLS: true,
-      });
-
-      this.logger.log('Realtime dispatcher inicializado com sucesso');
     } catch (error) {
       const errorMessage =
         error instanceof Error ? error.message : 'Erro desconhecido';
@@ -59,23 +52,80 @@ export class RealtimeDispatcher implements NotificationDispatcher {
   }
 
   /**
-   * Envia notificação em tempo real através do Pusher
-   * @param templateContent Conteúdo renderizado do template
-   * @param payload Dados da notificação
-   * @returns Resultado do envio
+   * Inicializa cliente Pusher
+   */
+  private initializePusher(): void {
+    const appId = this.configService.get<string>('PUSHER_APP_ID');
+    const key = this.configService.get<string>('PUSHER_KEY');
+    const secret = this.configService.get<string>('PUSHER_SECRET');
+    const cluster = this.configService.get<string>('PUSHER_CLUSTER', 'mt1');
+
+    if (!appId || !key || !secret) {
+      this.logger.warn('Pusher não configurado - credenciais ausentes');
+      return;
+    }
+
+    this.pusherClient = new Pusher({
+      appId,
+      key,
+      secret,
+      cluster,
+      useTLS: true,
+    });
+
+    this.activeProvider = 'pusher';
+    this.logger.log('Pusher client inicializado com sucesso', { cluster });
+  }
+
+  /**
+   * Inicializa cliente Soketi
+   */
+  private initializeSoketi(): void {
+    const appId = this.configService.get<string>('SOKETI_APP_ID');
+    const key = this.configService.get<string>('SOKETI_KEY');
+    const secret = this.configService.get<string>('SOKETI_SECRET');
+    const host = this.configService.get<string>('SOKETI_HOST', 'localhost');
+    const port = this.configService.get<number>('SOKETI_PORT', 6001);
+    const useTLS = this.configService.get<boolean>('SOKETI_USE_TLS', false);
+
+    if (!appId || !key || !secret) {
+      this.logger.warn('Soketi não configurado - credenciais ausentes');
+      return;
+    }
+
+    this.pusherClient = new Pusher({
+      appId,
+      key,
+      secret,
+      host,
+      port: port.toString(),
+      useTLS,
+      encrypted: useTLS,
+    });
+
+    this.activeProvider = 'soketi';
+    this.logger.log('Soketi client inicializado com sucesso', {
+      host,
+      port,
+      useTLS,
+    });
+  }
+
+  /**
+   * Envia notificação em tempo real
    */
   async send(
     templateContent: string,
     payload: NotificationPayload,
   ): Promise<NotificationResult> {
     try {
-      if (!this.pusherClient) {
+      if (!this.pusherClient || !this.activeProvider) {
         throw new Error('Realtime dispatcher não está configurado');
       }
 
       const realtimeConfig = this.parseRealtimeContent(templateContent);
 
-      // Dados da notificação para Pusher
+      // Dados da notificação
       const eventData = {
         ...realtimeConfig.data,
         payload: {
@@ -89,6 +139,7 @@ export class RealtimeDispatcher implements NotificationDispatcher {
       };
 
       this.logger.debug('Enviando notificação realtime', {
+        provider: this.activeProvider,
         channel: realtimeConfig.channelName,
         event: realtimeConfig.eventName,
         recipient: payload.recipient.id,
@@ -101,6 +152,7 @@ export class RealtimeDispatcher implements NotificationDispatcher {
       );
 
       this.logger.log('Notificação realtime enviada com sucesso', {
+        provider: this.activeProvider,
         channel: realtimeConfig.channelName,
         event: realtimeConfig.eventName,
         recipient: payload.recipient.id,
@@ -111,7 +163,7 @@ export class RealtimeDispatcher implements NotificationDispatcher {
         externalId: `${realtimeConfig.channelName}:${realtimeConfig.eventName}`,
         sentAt: new Date(),
         metadata: {
-          provider: 'pusher',
+          provider: this.activeProvider,
           channel: realtimeConfig.channelName,
           event: realtimeConfig.eventName,
         },
@@ -119,7 +171,9 @@ export class RealtimeDispatcher implements NotificationDispatcher {
     } catch (error) {
       const errorMessage =
         error instanceof Error ? error.message : 'Erro desconhecido';
+
       this.logger.error('Erro ao enviar notificação realtime', {
+        provider: this.activeProvider,
         error: errorMessage,
         recipient: payload.recipient.id,
         event: payload.event,
@@ -129,7 +183,9 @@ export class RealtimeDispatcher implements NotificationDispatcher {
         status: NotificationStatus.FAILED,
         error: errorMessage,
         metadata: {
-          provider: 'pusher',
+          provider: this.activeProvider ?? 'none',
+          event: payload.event,
+          category: payload.category,
         },
       };
     }
@@ -147,9 +203,15 @@ export class RealtimeDispatcher implements NotificationDispatcher {
       // Tenta fazer um trigger simples para verificar conectividade
       await this.pusherClient.trigger('health-check', 'ping', {
         timestamp: Date.now(),
+        provider: this.activeProvider,
       });
+
       return true;
-    } catch {
+    } catch (error) {
+      this.logger.warn('Health check falhou', {
+        provider: this.activeProvider,
+        error: error instanceof Error ? error.message : 'Erro desconhecido',
+      });
       return false;
     }
   }
@@ -160,24 +222,24 @@ export class RealtimeDispatcher implements NotificationDispatcher {
   getConfig(): Record<string, unknown> {
     return {
       channel: this.channel,
-      provider: 'pusher',
+      provider: this.activeProvider ?? 'none',
       timeout: DEFAULT_TIMEOUTS.realtime,
       isConfigured: this.pusherClient !== null,
+      ...(this.activeProvider === 'pusher' && {
+        cluster: this.configService.get<string>('PUSHER_CLUSTER'),
+      }),
+      ...(this.activeProvider === 'soketi' && {
+        host: this.configService.get<string>('SOKETI_HOST'),
+        port: this.configService.get<number>('SOKETI_PORT'),
+        useTLS: this.configService.get<boolean>('SOKETI_USE_TLS'),
+      }),
     };
   }
 
   /**
    * Extrai configurações de realtime do conteúdo do template
-   * @param content Conteúdo renderizado
-   * @returns Configurações de realtime
    */
   private parseRealtimeContent(content: string): RealtimeConfig {
-    // Formato esperado:
-    // CHANNEL: nome-do-canal
-    // EVENT: nome-do-evento
-    // ---
-    // {"mensagem": "Dados em JSON", "tipo": "alerta"}
-
     const lines = content.split('\n');
     const config: RealtimeConfig = {
       channelName: 'default',
@@ -202,21 +264,15 @@ export class RealtimeDispatcher implements NotificationDispatcher {
       }
     }
 
-    // Resto do conteúdo é JSON com dados extras
+    // Extrai dados JSON do conteúdo
     const jsonContent = lines.slice(contentStartIndex).join('\n').trim();
 
     if (jsonContent) {
       try {
-        const parsed: unknown = JSON.parse(jsonContent);
-        config.data =
-          typeof parsed === 'object' && parsed !== null
-            ? (parsed as Record<string, unknown>)
-            : {};
+        config.data = JSON.parse(jsonContent) as Record<string, unknown>;
       } catch (error) {
-        const errorMessage =
-          error instanceof Error ? error.message : 'Erro desconhecido';
-        this.logger.warn('Erro ao parse do JSON em template realtime', {
-          error: errorMessage,
+        this.logger.warn('Erro ao parsear JSON do template realtime', {
+          error: error instanceof Error ? error.message : 'Erro desconhecido',
           content: jsonContent,
         });
         config.data = { message: jsonContent };

@@ -7,21 +7,21 @@ import { Field, ObjectType } from '@nestjs/graphql';
 @ObjectType({ description: 'Estatísticas do sistema de retry de notificações' })
 export class RetryStatistics {
   @Field(() => Number, { description: 'Número de notificações pendentes' })
-  pending: number;
+  pending!: number;
 
   @Field(() => Number, {
     description: 'Número de notificações sendo reenviadas',
   })
-  retrying: number;
+  retrying!: number;
 
   @Field(() => Number, {
     description: 'Número de notificações enviadas com sucesso',
   })
-  success: number;
+  success!: number;
 
   @Field(() => Number, { description: 'Número de notificações que falharam' })
-  failed: number;
+  failed!: number;
 
   @Field(() => Number, { description: 'Número total de notificações' })
-  total: number;
+  total!: number;
 }

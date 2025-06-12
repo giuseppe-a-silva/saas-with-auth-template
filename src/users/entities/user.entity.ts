@@ -14,21 +14,21 @@ export class User {
    * Gerado automaticamente pelo sistema
    */
   @Field(() => ID, { description: 'ID único do usuário' })
-  id: string;
+  id!: string;
 
   /**
    * Endereço de email único do usuário
    * Utilizado para login e comunicação
    */
   @Field(() => String, { description: 'Endereço de e-mail único do usuário' })
-  email: string;
+  email!: string;
 
   /**
    * Nome de usuário único no sistema
    * Alternativa para login junto com email
    */
   @Field(() => String, { description: 'Nome de usuário único' })
-  username: string;
+  username!: string;
 
   // A senha NUNCA deve ser exposta na API GraphQL por questões de segurança
 
@@ -37,21 +37,21 @@ export class User {
    * Usuários devem verificar email antes de fazer login
    */
   @Field(() => Boolean, { description: 'Indica se o email foi verificado' })
-  emailVerified: boolean;
+  emailVerified!: boolean;
 
   /**
    * Papel (role) do usuário no sistema
    * Define o nível de acesso e permissões
    */
   @Field(() => Role, { description: 'Papel (role) do usuário no sistema' })
-  role: Role;
+  role!: Role;
 
   /**
    * Data e hora de criação do registro
    * Definido automaticamente na criação
    */
   @Field(() => Date, { description: 'Data e hora de criação do usuário' })
-  createdAt: Date;
+  createdAt!: Date;
 
   /**
    * Data e hora da última atualização
@@ -60,7 +60,7 @@ export class User {
   @Field(() => Date, {
     description: 'Data e hora da última atualização do usuário',
   })
-  updatedAt: Date;
+  updatedAt!: Date;
 
   // Futura expansão: campo para permissões específicas se necessário
   // @Field(() => [Permission], { nullable: 'itemsAndList', description: 'Permissões específicas do usuário' })

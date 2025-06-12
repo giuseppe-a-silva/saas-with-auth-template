@@ -7,6 +7,7 @@ import {
   SetMetadata,
 } from '@nestjs/common';
 import { Reflector } from '@nestjs/core';
+import { GqlExecutionContext } from '@nestjs/graphql';
 import { AuditActionType } from '@prisma/client';
 import { Request, Response } from 'express';
 import { Observable } from 'rxjs';
@@ -68,8 +69,7 @@ export class AuditInterceptor implements NestInterceptor {
       return next.handle();
     }
 
-    const request = context.switchToHttp().getRequest<Request>();
-    const response = context.switchToHttp().getResponse<Response>();
+    const { request, response } = this.extractHttpContext(context);
     const startTime = Date.now();
 
     // Extrai informações da requisição
@@ -98,6 +98,39 @@ export class AuditInterceptor implements NestInterceptor {
         throw error; // Re-propaga o erro
       }),
     );
+  }
+
+  /**
+   * Extrai o contexto HTTP da requisição, funcionando tanto para HTTP quanto GraphQL
+   * @param context - Contexto de execução do NestJS
+   * @returns Objetos Request e Response
+   * @private
+   */
+  private extractHttpContext(context: ExecutionContext): {
+    request: Request;
+    response: Response;
+  } {
+    if (context.getType() === 'http') {
+      // Contexto HTTP direto
+      return {
+        request: context.switchToHttp().getRequest<Request>(),
+        response: context.switchToHttp().getResponse<Response>(),
+      };
+    } else if (context.getType<string>() === 'graphql') {
+      // Contexto GraphQL - extrai HTTP do contexto GraphQL
+      const gqlContext = GqlExecutionContext.create(context);
+      const ctx = gqlContext.getContext<{ req: Request; res: Response }>();
+      return {
+        request: ctx.req,
+        response: ctx.res,
+      };
+    } else {
+      // Fallback - tenta extrair como HTTP
+      return {
+        request: context.switchToHttp().getRequest<Request>(),
+        response: context.switchToHttp().getResponse<Response>(),
+      };
+    }
   }
 
   /**

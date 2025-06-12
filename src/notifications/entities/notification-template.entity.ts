@@ -13,21 +13,21 @@ export class NotificationTemplate {
    * Gerado automaticamente pelo sistema
    */
   @Field(() => ID, { description: 'ID único do template' })
-  id: string;
+  id!: string;
 
   /**
    * Nome único identificador do template
    * Utilizado para referenciar o template no código
    */
   @Field(() => String, { description: 'Nome único do template' })
-  name: string;
+  name!: string;
 
   /**
    * Título da notificação
    * Usado como assunto em emails, título em push notifications, etc.
    */
   @Field(() => String, { description: 'Título da notificação' })
-  title: string;
+  title!: string;
 
   /**
    * Conteúdo da mensagem com sintaxe LiquidJS
@@ -36,7 +36,7 @@ export class NotificationTemplate {
   @Field(() => String, {
     description: 'Conteúdo do template com sintaxe LiquidJS',
   })
-  content: string;
+  content!: string;
 
   /**
    * Categoria/domínio da notificação
@@ -45,7 +45,7 @@ export class NotificationTemplate {
   @Field(() => NotificationCategory, {
     description: 'Categoria da notificação',
   })
-  category: NotificationCategory;
+  category!: NotificationCategory;
 
   /**
    * Canal de envio da notificação
@@ -54,14 +54,14 @@ export class NotificationTemplate {
   @Field(() => NotificationChannel, {
     description: 'Canal de envio da notificação',
   })
-  channel: NotificationChannel;
+  channel!: NotificationChannel;
 
   /**
    * Status ativo do template
    * Templates inativos não podem ser utilizados para envio
    */
   @Field(() => Boolean, { description: 'Se o template está ativo' })
-  isActive: boolean;
+  isActive!: boolean;
 
   /**
    * ID do usuário que criou o template
@@ -71,19 +71,19 @@ export class NotificationTemplate {
     nullable: true,
     description: 'ID do usuário que criou o template',
   })
-  createdBy: string | null;
+  createdBy!: string | null;
 
   /**
    * Data e hora de criação do template
    * Definido automaticamente na criação
    */
   @Field(() => Date, { description: 'Data e hora de criação do template' })
-  createdAt: Date;
+  createdAt!: Date;
 
   /**
    * Data e hora da última atualização
    * Atualizado automaticamente em modificações
    */
   @Field(() => Date, { description: 'Data e hora da última atualização' })
-  updatedAt: Date;
+  updatedAt!: Date;
 }

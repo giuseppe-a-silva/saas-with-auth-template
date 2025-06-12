@@ -7,7 +7,7 @@ import { Field, ObjectType } from '@nestjs/graphql';
 @ObjectType({ description: 'Resultado do envio de uma notificação' })
 export class NotificationResult {
   @Field(() => String, { description: 'Status do envio da notificação' })
-  status: string;
+  status!: string;
 
   @Field(() => String, {
     nullable: true,

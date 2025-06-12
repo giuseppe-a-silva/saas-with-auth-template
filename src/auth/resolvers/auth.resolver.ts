@@ -12,6 +12,7 @@ import { ChangePasswordDto } from '../dto/change-password.dto';
 import { ForgotPasswordDto } from '../dto/forgot-password.dto';
 import { LoginDto } from '../dto/login.dto';
 import { RegisterDto } from '../dto/register.dto';
+import { ResendVerificationEmailDto } from '../dto/resend-verification-email.dto';
 import { ResetPasswordDto } from '../dto/reset-password.dto';
 import { VerifyEmailDto } from '../dto/verify-email.dto';
 import {
@@ -143,6 +144,45 @@ export class AuthResolver {
       message: success
         ? 'Email verificado com sucesso! Agora você pode fazer login.'
         : 'Falha na verificação do email.',
+    };
+  }
+
+  /**
+   * Reenvia email de verificação para um usuário
+   * @param resendVerificationEmailDto - Dados contendo o email do usuário
+   * @returns Status sempre bem-sucedido (por segurança)
+   * @throws {BadRequestException} Se usuário não for encontrado ou já verificado
+   * @example
+   * ```graphql
+   * mutation {
+   *   resendVerificationEmail(resendVerificationEmailInput: { email: "user@example.com" }) {
+   *     success
+   *     message
+   *   }
+   * }
+   * ```
+   */
+  @Public() // Reenvio de verificação é público
+  @RateLimit({ windowMs: 3600000, maxRequests: 3 }) // 3 tentativas por hora por IP
+  @Audit(AuditActionType.EMAIL_VERIFICATION, {
+    includeRequestBody: true,
+  })
+  @Mutation(() => SimpleStatusPayload, {
+    description: 'Reenvia email de verificação para um usuário',
+  })
+  async resendVerificationEmail(
+    @Args('resendVerificationEmailInput')
+    resendVerificationEmailDto: ResendVerificationEmailDto,
+  ): Promise<SimpleStatusPayload> {
+    const success = await this.emailVerificationService.resendVerificationEmail(
+      resendVerificationEmailDto.email,
+    );
+
+    return {
+      success: true,
+      message: success
+        ? 'Se o email existir em nossa base e não estiver verificado, você receberá um novo email de verificação.'
+        : 'Se o email existir em nossa base e não estiver verificado, você receberá um novo email de verificação.',
     };
   }
 

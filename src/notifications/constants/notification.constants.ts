@@ -38,12 +38,6 @@ export const DEFAULT_RATE_LIMITS: Record<string, RateLimitConfig> = {
     perDay: 20000,
     burstLimit: 10,
   },
-  webhook: {
-    perMinute: 20,
-    perHour: 300,
-    perDay: 2000,
-    burstLimit: 3,
-  },
 };
 
 /**
@@ -53,8 +47,6 @@ export const DEFAULT_TIMEOUTS = {
   email: 30000, // 30 segundos
   push: 10000, // 10 segundos
   realtime: 5000, // 5 segundos
-  webhook: 15000, // 15 segundos
-  thirdParty: 15000, // 15 segundos (alias para webhook)
 } as const;
 
 /**

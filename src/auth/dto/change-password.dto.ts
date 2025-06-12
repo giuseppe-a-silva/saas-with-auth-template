@@ -15,7 +15,7 @@ export class ChangePasswordDto {
   @Field({ description: 'Senha atual do usuário' })
   @IsNotEmpty({ message: 'A senha atual não pode estar vazia.' })
   @IsString({ message: 'A senha atual deve ser uma string.' })
-  currentPassword: string;
+  currentPassword!: string;
 
   /**
    * Nova senha desejada
@@ -25,5 +25,5 @@ export class ChangePasswordDto {
   @IsNotEmpty({ message: 'A nova senha não pode estar vazia.' })
   @IsString({ message: 'A nova senha deve ser uma string.' })
   @IsStrongPassword()
-  newPassword: string;
+  newPassword!: string;
 }

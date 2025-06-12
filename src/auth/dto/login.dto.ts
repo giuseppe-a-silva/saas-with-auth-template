@@ -21,7 +21,7 @@ export class LoginDto {
   @Transform(({ value }: { value: unknown }) =>
     typeof value === 'string' ? value.trim().toLowerCase() : value,
   )
-  identifier: string;
+  identifier!: string;
 
   /**
    * Senha do usuário em texto plano
@@ -35,5 +35,5 @@ export class LoginDto {
   @Transform(({ value }: { value: unknown }) =>
     typeof value === 'string' ? value.trim() : value,
   )
-  password: string;
+  password!: string;
 }

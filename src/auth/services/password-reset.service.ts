@@ -2,12 +2,12 @@ import { BadRequestException, Injectable, Logger } from '@nestjs/common';
 import { ConfigService } from '@nestjs/config';
 import * as crypto from 'crypto';
 import { PrismaService } from '../../database/prisma.service';
-import { NotificationService } from '../../notifications/services/notification.service';
+import { EventNotificationService } from '../../notifications/services/event-notification.service';
 import { PasswordService } from './password.service';
 
 /**
- * Serviço responsável pela recuperação e redefinição de senhas
- * Gerencia tokens de recuperação e envio de emails
+ * Serviço responsável pela recuperação de senha dos usuários
+ * Gera tokens seguros e envia emails de recuperação
  */
 @Injectable()
 export class PasswordResetService {
@@ -15,7 +15,7 @@ export class PasswordResetService {
 
   constructor(
     private readonly prisma: PrismaService,
-    private readonly notificationService: NotificationService,
+    private readonly eventNotificationService: EventNotificationService,
     private readonly passwordService: PasswordService,
     private readonly configService: ConfigService,
   ) {}
@@ -91,8 +91,8 @@ export class PasswordResetService {
       };
 
       // Envia email de recuperação
-      await this.notificationService.sendNotification({
-        templateName: 'auth-password-reset',
+      await this.eventNotificationService.sendNotification('PASSWORD_RESET', {
+        timestamp: new Date().toISOString(),
         recipient: {
           id: user.id,
           name: user.username,
@@ -166,8 +166,8 @@ export class PasswordResetService {
         securityUrl: `${this.configService.get<string>('APP_BASE_URL', 'http://localhost:3000')}/auth/security`,
       };
 
-      await this.notificationService.sendNotification({
-        templateName: 'auth-password-changed',
+      await this.eventNotificationService.sendNotification('PASSWORD_CHANGED', {
+        timestamp: now.toISOString(),
         recipient: {
           id: user.id,
           name: user.username,

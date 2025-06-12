@@ -160,3 +160,325 @@ Seus cursos:
 4. Implementar rate limiting
 5. Criar dispatchers restantes
 6. Adicionar testes
+
+# 📧 Módulo de Notificações - Nova API
+
+## 🎯 Visão Geral
+
+O módulo de notificações foi completamente refatorado para usar uma arquitetura orientada a eventos com BullMQ. A nova API é simples, performática e altamente escalável.
+
+## 🚀 Nova API Simplificada
+
+### Uso Básico
+
+```typescript
+import { EventNotificationService } from './notifications/services/event-notification.service';
+
+// Injetar o serviço
+constructor(
+  private readonly eventNotificationService: EventNotificationService,
+) {}
+
+// Enviar notificação
+await this.eventNotificationService.sendNotification('USER_REGISTERED', {
+  timestamp: new Date().toISOString(),
+  data: {
+    userName: 'João Silva',
+    email: 'joao@exemplo.com',
+  },
+  recipient: {
+    id: 'user-123',
+    name: 'João Silva',
+    email: 'joao@exemplo.com',
+  },
+});
+```
+
+## 📋 Eventos Suportados
+
+O sistema suporta qualquer `eventKey` dinâmico. Exemplos comuns:
+
+- `USER_REGISTERED` - Novo usuário cadastrado
+- `LOGIN` - Login realizado
+- `PASSWORD_RESET` - Solicitação de reset de senha
+- `EMAIL_VERIFICATION` - Verificação de email
+- `PAYMENT_RECEIVED` - Pagamento recebido
+- `ORDER_COMPLETED` - Pedido finalizado
+
+## 🔧 Canais Disponíveis
+
+### 1. EMAIL
+
+- **Providers**: SMTP ou AWS SES (detecção automática)
+- **Formato**: HTML com subject e from
+- **Configuração**: Via variáveis de ambiente
+
+### 2. PUSH
+
+- **Provider**: OneSignal
+- **Formato**: Título + corpo + dados customizados
+- **Plataformas**: iOS, Android, Web
+
+### 3. REALTIME
+
+- **Providers**: Pusher ou Soketi
+- **Formato**: JSON com dados do evento
+- **Uso**: Notificações em tempo real na interface
+
+## 🎨 Templates Automáticos
+
+### Comportamento Padrão
+
+Quando não há templates customizados para um `eventKey`, o sistema gera automaticamente templates padrão para todos os 3 canais:
+
+#### Email Padrão
+
+```html
+<!DOCTYPE html>
+<html>
+  <head>
+    <meta charset="UTF-8" />
+    <title>{{ eventKey }}</title>
+  </head>
+  <body>
+    <h2>🔔 Notificação: {{ eventKey }}</h2>
+    <p><strong>Data:</strong> {{ timestamp }}</p>
+    <div>
+      <h3>📋 Dados:</h3>
+      <pre>{{ data | json }}</pre>
+    </div>
+  </body>
+</html>
+```
+
+#### Push Padrão
+
+```
+TITLE: 🔔 {{ eventKey }}
+---
+Nova notificação: {{ eventKey }}
+Data: {{ timestamp }}
+```
+
+#### Realtime Padrão
+
+```json
+{
+  "type": "notification",
+  "eventKey": "{{ eventKey }}",
+  "timestamp": "{{ timestamp }}",
+  "data": {{ data | json }}
+}
+```
+
+## 🛠️ Gestão de Templates
+
+### TemplateManagerService
+
+```typescript
+import { TemplateManagerService } from './notifications/services/template-manager.service';
+
+// Criar template customizado
+await templateManager.createTemplate({
+  eventKey: 'USER_REGISTERED',
+  channel: NotificationChannel.EMAIL,
+  title: 'Bem-vindo!',
+  content: `
+    <!DOCTYPE html>
+    <html>
+    <body>
+        <h1>Bem-vindo, {{ data.userName }}!</h1>
+        <p>Sua conta foi criada com sucesso.</p>
+    </body>
+    </html>
+  `,
+});
+
+// Buscar template
+const template = await templateManager.findTemplate(
+  'USER_REGISTERED',
+  NotificationChannel.EMAIL,
+);
+
+// Listar todos os templates de um evento
+const templates =
+  await templateManager.findTemplatesByEventKey('USER_REGISTERED');
+```
+
+## ⚡ BullMQ e Performance
+
+### Configuração de Queue
+
+- **Workers**: 4 simultâneos
+- **Retry**: 3 tentativas máximas
+- **Backoff**: Exponencial
+- **Redis**: Conexão configurável
+
+### Monitoramento
+
+```typescript
+// O sistema registra automaticamente logs de auditoria
+// Cada notificação gera logs detalhados para rastreamento
+```
+
+## 🔧 Configuração
+
+### Variáveis de Ambiente
+
+```bash
+# Redis (BullMQ)
+REDIS_HOST=localhost
+REDIS_PORT=6379
+REDIS_PASSWORD=sua_senha
+REDIS_DB=0
+
+# Email - SMTP
+SMTP_HOST=smtp.gmail.com
+SMTP_PORT=587
+SMTP_USER=seu_email@gmail.com
+SMTP_PASS=sua_senha
+
+# Email - AWS SES
+AWS_ACCESS_KEY_ID=sua_key
+AWS_SECRET_ACCESS_KEY=sua_secret
+AWS_SES_REGION=us-east-1
+
+# Push - OneSignal
+ONESIGNAL_APP_ID=seu_app_id
+ONESIGNAL_API_KEY=sua_api_key
+
+# Realtime - Pusher
+PUSHER_APP_ID=seu_app_id
+PUSHER_KEY=sua_key
+PUSHER_SECRET=seu_secret
+PUSHER_CLUSTER=mt1
+
+# Realtime - Soketi
+REALTIME_PROVIDER=soketi
+SOKETI_APP_ID=seu_app_id
+SOKETI_KEY=sua_key
+SOKETI_SECRET=seu_secret
+SOKETI_HOST=localhost
+SOKETI_PORT=6001
+SOKETI_USE_TLS=false
+```
+
+## 📊 Exemplos de Uso
+
+### 1. Registro de Usuário
+
+```typescript
+await eventNotificationService.sendNotification('USER_REGISTERED', {
+  timestamp: new Date().toISOString(),
+  data: {
+    userName: user.name,
+    email: user.email,
+    registrationDate: user.createdAt,
+  },
+  recipient: {
+    id: user.id,
+    name: user.name,
+    email: user.email,
+  },
+});
+```
+
+### 2. Reset de Senha
+
+```typescript
+await eventNotificationService.sendNotification('PASSWORD_RESET', {
+  timestamp: new Date().toISOString(),
+  data: {
+    resetToken: token,
+    expiresAt: expirationDate,
+    resetUrl: `https://app.com/reset?token=${token}`,
+  },
+  recipient: {
+    id: user.id,
+    name: user.name,
+    email: user.email,
+  },
+});
+```
+
+### 3. Notificação de Pagamento
+
+```typescript
+await eventNotificationService.sendNotification('PAYMENT_RECEIVED', {
+  timestamp: new Date().toISOString(),
+  data: {
+    amount: payment.amount,
+    currency: payment.currency,
+    paymentMethod: payment.method,
+    transactionId: payment.id,
+  },
+  recipient: {
+    id: user.id,
+    name: user.name,
+    email: user.email,
+  },
+});
+```
+
+## 🔍 Health Checks
+
+```typescript
+import { DispatcherFactory } from './notifications/dispatchers/dispatcher.factory';
+
+// Verificar status de todos os canais
+const status = await dispatcherFactory.getChannelsStatus();
+
+// Verificar se todos estão funcionais
+const allHealthy = await dispatcherFactory.areAllChannelsHealthy();
+
+// Verificar canal específico
+const emailAvailable = await dispatcherFactory.isChannelAvailable(
+  NotificationChannel.EMAIL,
+);
+```
+
+## 🎯 Benefícios da Nova Arquitetura
+
+1. **Simplicidade**: Uma única chamada para enviar notificações
+2. **Performance**: Processamento assíncrono com BullMQ
+3. **Escalabilidade**: Workers configuráveis e retry automático
+4. **Flexibilidade**: Templates dinâmicos por evento + canal
+5. **Observabilidade**: Logs detalhados e auditoria completa
+6. **Manutenibilidade**: Código limpo e bem estruturado
+
+## 🚨 Migração da API Antiga
+
+A API antiga com GraphQL foi removida. Para migrar:
+
+**Antes:**
+
+```typescript
+// GraphQL mutation
+mutation SendNotification($input: NotificationInput!) {
+  sendNotification(input: $input) {
+    id
+    status
+  }
+}
+```
+
+**Depois:**
+
+```typescript
+// Service direto
+await eventNotificationService.sendNotification(eventKey, payload);
+```
+
+## 📝 Logs e Auditoria
+
+Todas as notificações são automaticamente registradas no sistema de auditoria com:
+
+- ✅ Status de envio por canal
+- 🕐 Timestamps detalhados
+- 📧 Dados do destinatário
+- 🔍 Metadados de cada provider
+- ❌ Erros e tentativas de retry
+
+---
+
+**Desenvolvido com ❤️ para máxima performance e simplicidade**

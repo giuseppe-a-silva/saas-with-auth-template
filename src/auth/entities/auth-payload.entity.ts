@@ -6,7 +6,7 @@ import { Field, ObjectType } from '@nestjs/graphql';
 })
 export class AuthPayload {
   @Field(() => String, { description: 'Token de acesso JWT' })
-  accessToken: string;
+  accessToken!: string;
 
   // O refresh token é gerenciado via cookie HttpOnly e não é exposto aqui.
 
@@ -20,7 +20,7 @@ export class SimpleStatusPayload {
   @Field(() => Boolean, {
     description: 'Indica se a operação foi bem-sucedida',
   })
-  success: boolean;
+  success!: boolean;
 
   @Field(() => String, {
     nullable: true,

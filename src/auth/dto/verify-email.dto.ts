@@ -17,5 +17,5 @@ export class VerifyEmailDto {
   @Length(32, 128, {
     message: 'O token deve ter entre 32 e 128 caracteres.',
   })
-  token: string;
+  token!: string;
 }
